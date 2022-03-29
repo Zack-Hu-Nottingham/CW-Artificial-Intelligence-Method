@@ -39,7 +39,7 @@ int K= 3; // k-opt is used
 int SHAKE_STRENGTH = 12;
 struct solution_struct best_sln;  //global best solution
 int RAND_SEED[] = {1,20,30,40,50,60,70,80,90,100,110, 120, 130, 140, 150, 160, 170, 180, 190, 200};
-int NUM_OF_RUNS = 2;
+int NUM_OF_RUNS = 1;
 int MAX_TIME = 30;  //max amount of time permited (in sec)
 int num_of_problems;
 
@@ -67,14 +67,49 @@ void free_problem(struct problem_struct* prob)
     }
 }
 
+//copy a solution from another solution
+bool copy_solution(struct solution_struct* dest_sln, struct solution_struct* source_sln)
+{
+    // if(source_sln ==NULL) return false;
+    // if(dest_sln==NULL)
+    // {
+    //     dest_sln = malloc(sizeof(struct solution_struct));
+    // }
+    // else{
+    //     free(dest_sln->cap_left);
+    //     free(dest_sln->x);
+    // }
+    // int n = source_sln->prob->n;
+    // int m =source_sln->prob->dim;
+    // dest_sln->x = malloc(sizeof(int)*n);
+    // dest_sln->cap_left=malloc(sizeof(int)*m);
+    // for(int i=0; i<m; i++)
+    //     dest_sln->cap_left[i]= source_sln->cap_left[i];
+    // for(int j=0; j<n; j++)
+    //     dest_sln->x[j] = source_sln->x[j];
+    // dest_sln->prob= source_sln->prob;
+    // dest_sln->feasibility=source_sln->feasibility;
+    // dest_sln->objective=source_sln->objective;
+    return true;
+}
+
+//update global best solution from sln
+void update_best_solution(struct solution_struct* sln)
+{
+    if(best_sln.objective < sln->objective)
+    copy_solution(&best_sln, sln);
+}
+
 struct problem_struct** load_problems(char* data_file)
 {
     int i,j,k;
 
     // Open data file and read out data
     FILE* pfile = fopen(data_file, "r");
-    if(pfile==NULL)
-        {printf("Data file %s does not exist. Please check!\n", data_file); exit(2); }
+    if(pfile==NULL) {
+        printf("Data file %s does not exist. Please check!\n", data_file); exit(2); 
+    }
+
     fscanf (pfile, "%d", &num_of_problems);
 
     // For test purpose
@@ -100,7 +135,7 @@ struct problem_struct** load_problems(char* data_file)
         {
             my_problems[k]->items[j].index=j;
             fscanf(pfile, "%d", &(my_problems[k]->items[j].size)); //read profit data
-            printf("item[%d].p=%d\n", j, my_problems[k]->items[j].size);
+            // printf("item[%d].p=%d\n", j, my_problems[k]->items[j].size);
         }
     }
     fclose(pfile); //close file
@@ -108,26 +143,42 @@ struct problem_struct** load_problems(char* data_file)
     return my_problems;
 }
 
+
+// 还有一堆问题
 //output a given solution to a file
 void output_solution(struct solution_struct* sln, char* out_file)
 {
-    if(out_file !=NULL){
-        FILE* pfile = fopen(out_file, "a"); //append solution data
-        double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
-        if(best_sln.prob->best_obj!=0) gap=  100*(best_sln.prob->best_obj - best_sln.objective)/best_sln.prob->best_obj;
-        fprintf(pfile, "%i \t %0.2f\n", (int)sln->objective, gap);
-        for(int i=0; i<sln->prob->n; i++)
-        {
-            fprintf(pfile, "%i ", sln->x[i]);
-        }
-        fprintf(pfile, "\n");
-        /*for(int j=0; j<sln->prob->n; j++)
-            fprintf(pfile, "%i ", sln->prob->items[j].p);
-        fprintf(pfile, "\n");*/
-        fclose(pfile);
-    }
-    else
-        printf("sln.feas=%d, sln.obj=%f\n", sln->feasibility, sln->objective);
+
+    // if(out_file != NULL){
+    //     FILE* pfile = fopen(out_file, "a"); //append solution data
+    //     double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
+    //     if(best_sln.prob->known_best != 0) {
+    //         gap = 100*(best_sln.prob->known_best - best_sln.objective)/best_sln.prob->known_best;
+    //     }
+    //     fprintf(pfile, "%i \t %0.2f\n", (int)sln->objective, gap);
+    //     // for(int i=0; i<sln->prob->n; i++)
+    //     // {
+    //     //     fprintf(pfile, "%i ", sln->x[i]);
+    //     // }
+    //     fprintf(pfile, "\n");
+    //     // for(int j=0; j<sln->prob->n; j++)
+    //         // fprintf(pfile, "%i ", sln->prob->items[j].p);
+    //     // fprintf(pfile, "\n");
+    //     fclose(pfile);
+    // }
+    // else
+    //     printf("sln.feas=%d, sln.obj=%d\n", sln->feasibility, sln->objective);
+}
+
+
+// struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
+
+// }
+
+void varaible_neighbourhood_search(struct problem_struct* prob) {
+
+    // struct solution_struct* curt_sln = greedy_heuristic(prob);
+    // update_best_solution(curt_sln);
 }
 
 int main(int argc, const char * argv[]) {
@@ -173,43 +224,26 @@ int main(int argc, const char * argv[]) {
         for(int k=0; k<num_of_problems; k++)
         {
             best_sln.objective=0; best_sln.feasibility=0;
-            // for(int run=0; run<NUM_OF_RUNS; run++)
-    //         {
-    //             srand(RAND_SEED[run]);
-    //             switch (alg)
-    //             {
-    //             case SA:
-    //                 printf("Running Simulated Annealing...\n");
-    //                 SimulatedAnnealing(my_problems[k]); // call SA method
-    //                 break;
-    //             case TS:
-    //                 printf("Running Tabu Search...\n");
-    //                 TabuSearch(my_problems[k]);
-    //                 break;
-    //             case VNS:
-    //                 printf("Running VNS...\n");
-    //                     varaible_neighbourhood_search(my_problems[k]);
-    //                 break;
-    //             default:
-    //                 printf("No algorithm selected. Please select an algorithm!\n");
-    //                 return 1;
-    //             }
-    //         }
+            for(int run=0; run<NUM_OF_RUNS; run++) {
+                printf("Running VNS...\n");
+                varaible_neighbourhood_search(my_problems[k]);
+            }
             output_solution(&best_sln,out_file);
         }
     }
 
     for(int k=0; k<num_of_problems; k++)
     {
-       free_problem(my_problems[k]); //free problem data memory
+        printf("free problem %d\n", k);
+        free_problem(my_problems[k]); //free problem data memory
     }
 
     free(my_problems); //free problems array
     
-    if (best_sln.x!=NULL && best_sln.cap_left != NULL) {
-        free(best_sln.cap_left); 
-        free(best_sln.x);
-    } 
+    // if (best_sln.x!=NULL && best_sln.cap_left != NULL) {
+    //     free(best_sln.cap_left); 
+    //     free(best_sln.x);
+    // } 
     
     //free global
     return 0;
