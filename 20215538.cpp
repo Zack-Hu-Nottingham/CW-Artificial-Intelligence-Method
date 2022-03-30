@@ -12,7 +12,7 @@ using namespace std;
 struct item_struct{
     int size;
     int index;
-    // int p;
+    bool isPacked;
 };
 
 struct bin_struct {
@@ -29,7 +29,7 @@ struct problem_struct{
 
 struct solution_struct {
     struct problem_struct* prob;
-    int objective; // float objecttive;
+    int objective; // float objective;
     int feasibility;
     vector<bin_struct> bins;
 };
@@ -134,6 +134,7 @@ struct problem_struct** load_problems(char* data_file)
         for(j=0; j<n; j++)
         {
             my_problems[k]->items[j].index=j;
+            my_problems[k]=>items[j].isPacked = false;
             fscanf(pfile, "%d", &(my_problems[k]->items[j].size)); //read profit data
             // printf("item[%d].p=%d\n", j, my_problems[k]->items[j].size);
         }
@@ -144,42 +145,84 @@ struct problem_struct** load_problems(char* data_file)
 }
 
 
-// 还有一堆问题
 //output a given solution to a file
-void output_solution(struct solution_struct* sln, char* out_file)
-{
+void output_solution(struct solution_struct* sln, char* out_file) {}
 
-    // if(out_file != NULL){
-    //     FILE* pfile = fopen(out_file, "a"); //append solution data
-    //     double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
-    //     if(best_sln.prob->known_best != 0) {
-    //         gap = 100*(best_sln.prob->known_best - best_sln.objective)/best_sln.prob->known_best;
-    //     }
-    //     fprintf(pfile, "%i \t %0.2f\n", (int)sln->objective, gap);
-    //     // for(int i=0; i<sln->prob->n; i++)
-    //     // {
-    //     //     fprintf(pfile, "%i ", sln->x[i]);
-    //     // }
-    //     fprintf(pfile, "\n");
-    //     // for(int j=0; j<sln->prob->n; j++)
-    //         // fprintf(pfile, "%i ", sln->prob->items[j].p);
-    //     // fprintf(pfile, "\n");
-    //     fclose(pfile);
-    // }
-    // else
-    //     printf("sln.feas=%d, sln.obj=%d\n", sln->feasibility, sln->objective);
+struct solution_struct* initialize_empty_sol (struct problem_struct* prob) {
+    
+    struct solution_struct* sol = (struct solution_struct*) malloc (sizeof(solution_struct));
+    sol->prob = prob;
+    sol->objective = 0;
+    sol->feasibility = 0;
+
+    return sol;
 }
 
+struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
+    int n = prob->n;
+    int cap = prob->capacities;
+    struct item_struct* items = prob->items;
 
-// struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
+    struct solution_struct* sol = initialize_empty_sol(prob);
 
-// }
+    while(1) {
 
-void varaible_neighbourhood_search(struct problem_struct* prob) {
-
-    // struct solution_struct* curt_sln = greedy_heuristic(prob);
-    // update_best_solution(curt_sln);
+        //初始化一个bin
+        bin_struct bin;
+        bin.cap_left = cap;
+    
+        //对这个bin加入item
+        for (int i=0; i<n; i++) {
+            if (!items[i]->isPacked && bin.cap_left >= items[i]->size) {
+                bin.packed_items.p
+            }
+        }
+    
+    }
+    
 }
+
+// void varaible_neighbourhood_search(struct problem_struct* prob) {
+int varaible_neighbourhood_search(struct problem_struct* prob){
+    clock_t time_start, time_fin;
+    time_start = clock();
+    double time_spent=0;
+    int nb_indx =0; //neighbourhood index
+    
+    best_sln.prob = prob;
+    struct solution_struct* curt_sln = greedy_heuristic(prob);
+    update_best_solution(curt_sln);
+    
+    int shaking_count =0;
+    while(time_spent < MAX_TIME) //note that final computational time can be way beyond the MAX_TIME if best_descent is time consuming
+    {
+        while(nb_indx<K){
+            struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
+            if(neighb_s->objective > curt_sln->objective){
+                copy_solution(curt_sln, neighb_s);
+                nb_indx=1;
+            }
+            else nb_indx++;
+            free_solution(neighb_s);free(neighb_s);
+        }
+        update_best_solution(curt_sln);
+        double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
+        if(best_sln.prob->best_obj!=0) gap=  100*(best_sln.prob->best_obj - best_sln.objective)/best_sln.prob->best_obj;
+        printf("shaking_count=%d, curt obj =%0.0f,\t best obj=%0.0f,\t gap= %0.2f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
+        vns_shaking(curt_sln, SHAKE_STRENGTH); //shaking at a given strength. This can be made adaptive
+        //vns_shaking(curt_sln, shaking_count/100+1); //re-active shaking
+        shaking_count++;
+        nb_indx=0;
+        
+        time_fin=clock();
+        time_spent = (double)(time_fin-time_start)/CLOCKS_PER_SEC;
+    }
+
+    //output_solution(&best_sln, "vns_results.txt");
+    free_solution(curt_sln); free(curt_sln);
+    return 0;
+}
+
 
 int main(int argc, const char * argv[]) {
     
