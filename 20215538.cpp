@@ -127,14 +127,14 @@ struct problem_struct** load_problems(char* data_file)
         fscanf (pfile, "%d", &capacities);
         fscanf (pfile, "%d", &n); 
         fscanf (pfile, "%d", &known_best);
-        printf("Name: %s, capacities: %d, item number: %d, known_best: %d\n", name, capacities, n, known_best);
+        // printf("Name: %s, capacities: %d, item number: %d, known_best: %d\n", name, capacities, n, known_best);
         
         // Initialize problem
         init_problem(n, capacities, known_best, &my_problems[k]);  //allocate data memory
         for(j=0; j<n; j++)
         {
             my_problems[k]->items[j].index=j;
-            my_problems[k]=>items[j].isPacked = false;
+            my_problems[k]->items[j].isPacked = false;
             fscanf(pfile, "%d", &(my_problems[k]->items[j].size)); //read profit data
             // printf("item[%d].p=%d\n", j, my_problems[k]->items[j].size);
         }
@@ -159,26 +159,56 @@ struct solution_struct* initialize_empty_sol (struct problem_struct* prob) {
 }
 
 struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
-    int n = prob->n;
-    int cap = prob->capacities;
-    struct item_struct* items = prob->items;
+    int total_n = prob->n;
+    int n = prob->n; // unpacked items number
+    int cap = prob->capacities; // capacities of each bin
+    struct item_struct* items = prob->items; // all items of the problem
 
-    struct solution_struct* sol = initialize_empty_sol(prob);
+    struct solution_struct* sol = initialize_empty_sol(prob); // initialize the solution
 
+    // initialize a bin
+    bin_struct *bin = new bin_struct();
+    bin->cap_left = cap;
+
+    bool isFound = false;
+
+    // let it run infinitely until some conditions are reached
     while(1) {
+        // cout << "unpacked items num: " << n << endl;
+        if (n == 0) {
+            break; // if all items packed
+        }
+        
+        for (int i=0; i<total_n; i++) {
+            // if the item is small enough to be added into the bin
+            if (!items[i].isPacked && bin->cap_left >= items[i].size) {
+                bin->packed_items.push_back(items[i]);
+                bin->cap_left -= items[i].size;
+                items[i].isPacked = true;
+                isFound = true;
+                n--; // minus the total unpacked item number
 
-        //初始化一个bin
-        bin_struct bin;
-        bin.cap_left = cap;
-    
-        //对这个bin加入item
-        for (int i=0; i<n; i++) {
-            if (!items[i]->isPacked && bin.cap_left >= items[i]->size) {
-                bin.packed_items.p
+                // cout << "Find "
+                break; // break the for loop
             }
         }
+        if (!isFound) { 
+            // the current bin is too small to hold any item, push back the bin
+            sol->bins.push_back(*bin);
+            sol->objective += 1;
+
+            // cout << "Create new bin" << endl;
+
+            // initialize a new empty bin
+            bin = new bin_struct();
+            bin->cap_left = cap;
+
+        }
     
+        isFound = false;
+
     }
+    return sol;
     
 }
 
@@ -191,6 +221,18 @@ int varaible_neighbourhood_search(struct problem_struct* prob){
     
     best_sln.prob = prob;
     struct solution_struct* curt_sln = greedy_heuristic(prob);
+
+    // Test code here
+    cout << "Objectives: " << curt_sln->objective << endl;
+    cout << "Known best: " << prob->known_best << endl;
+    // int cnt = 0;
+    // while(!(curt_sln->bins.empty())) {
+        // cout << "bin " << cnt << endl;
+        // cout << curt_sln->bins.at(cnt).cap_left << endl;
+        // cnt ++;
+    // }
+
+/* 
     update_best_solution(curt_sln);
     
     int shaking_count =0;
@@ -220,6 +262,8 @@ int varaible_neighbourhood_search(struct problem_struct* prob){
 
     //output_solution(&best_sln, "vns_results.txt");
     free_solution(curt_sln); free(curt_sln);
+*/
+
     return 0;
 }
 
@@ -277,7 +321,7 @@ int main(int argc, const char * argv[]) {
 
     for(int k=0; k<num_of_problems; k++)
     {
-        printf("free problem %d\n", k);
+        // printf("free problem %d\n", k);
         free_problem(my_problems[k]); //free problem data memory
     }
 
