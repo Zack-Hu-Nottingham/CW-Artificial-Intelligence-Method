@@ -44,6 +44,22 @@ int MAX_TIME = 30;  //max amount of time permited (in sec)
 int num_of_problems;
 
 
+int cmpfunc1(const void* a, const void* b){
+    const struct item_struct* item1 = (const struct item_struct*) a;
+    const struct item_struct* item2 = (const struct item_struct*) b;
+    if(item1->size>item2->size) return -1;
+    if(item1->size<item2->size) return 1;
+    return 0;
+}
+
+int cmpfunc2(const void* a, const void* b){
+    const struct item_struct* item1 = (const struct item_struct*) a;
+    const struct item_struct* item2 = (const struct item_struct*) b;
+    if(item1->size>item2->size) return 1;
+    if(item1->size<item2->size) return -1;
+    return 0;
+}
+
 void init_problem(int n, int capacities, int known_best, struct problem_struct** my_prob)
 {
     struct problem_struct* new_prob = (struct problem_struct*) malloc(sizeof(struct problem_struct));
@@ -96,7 +112,7 @@ bool copy_solution(struct solution_struct* dest_sln, struct solution_struct* sou
 //update global best solution from sln
 void update_best_solution(struct solution_struct* sln)
 {
-    if(best_sln.objective < sln->objective)
+    if(best_sln.objective > sln->objective)
     copy_solution(&best_sln, sln);
 }
 
@@ -154,10 +170,23 @@ struct solution_struct* initialize_empty_sol (struct problem_struct* prob) {
     sol->prob = prob;
     sol->objective = 0;
     sol->feasibility = 0;
+    // sol->bins = vector<bin_struct>;
 
     return sol;
 }
 
+// void free_solution(struct solution_struct* sln)
+// {
+//     if(sln!=NULL)
+//     {
+//         sln->objective=0;
+//         sln->prob=NULL;
+//         sln->feasibility=false;
+//     }
+// }
+
+
+/*  first descent
 struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
     int total_n = prob->n;
     int n = prob->n; // unpacked items number
@@ -171,6 +200,10 @@ struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
     bin->cap_left = cap;
 
     bool isFound = false;
+
+    qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc1);
+    cout << prob->items[0].size << endl;
+    cout << prob->items[n-1].size << endl;
 
     // let it run infinitely until some conditions are reached
     while(1) {
@@ -211,9 +244,83 @@ struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
     return sol;
     
 }
+*/
+
+//  best descent
+struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
+    int total_n = prob->n;
+    int n = prob->n; // unpacked items number
+    int cap = prob->capacities; // capacities of each bin
+    struct item_struct* items = prob->items; // all items of the problem
+
+    struct solution_struct* sol = new solution_struct(); // initialize the solution
+    sol->prob = prob;
+    // struct solution_struct* sol = initialize_empty_sol(prob); // initialize the solution
+
+    // initialize a bin
+    bin_struct *bin = new bin_struct();
+    bin->cap_left = cap;
+
+    bool isFound = false;
+
+    // qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc1); // descending
+    qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc2); // ascending
+
+    // let it run infinitely until some conditions are reached
+    while(1) {
+        // cout << "unpacked items num: " << n << endl;
+        if (n == 0) {
+            break; // if all items packed
+        }
+        
+        item_struct* choice = NULL; // record the best descent
+
+        for (int i=0; i<total_n; i++) {
+            // if the item is small enough to be added into the bin
+            if (!items[i].isPacked && bin->cap_left >= items[i].size) {
+                isFound = true; 
+
+                if (choice == NULL) { 
+                    choice = & items[i]; 
+                }
+
+                // compate with the current known best descent                
+                if (items[i].size > choice->size) {
+                    choice = & items[i];
+                }
+            }
+        }
+
+        if (isFound) {
+            
+            bin->packed_items.push_back(*choice);
+            bin->cap_left -= choice->size;
+            choice->isPacked = true;
+            n--; // minus the total unpacked item number
+
+        } else { 
+            
+            // the current bin is too small to hold any item, push back the bin
+            sol->bins.push_back(*bin);
+            delete(bin);
+            sol->objective += 1;
+
+            // initialize a new empty bin
+            bin = new bin_struct();
+            bin->cap_left = cap;
+        }
+    
+        isFound = false;
+
+    }
+
+    delete(bin);
+    return sol;
+    
+}
 
 // void varaible_neighbourhood_search(struct problem_struct* prob) {
-int varaible_neighbourhood_search(struct problem_struct* prob){
+void varaible_neighbourhood_search(struct problem_struct* prob){
     clock_t time_start, time_fin;
     time_start = clock();
     double time_spent=0;
@@ -223,8 +330,12 @@ int varaible_neighbourhood_search(struct problem_struct* prob){
     struct solution_struct* curt_sln = greedy_heuristic(prob);
 
     // Test code here
+    cout << "Initialize a possible answer: " << endl;
     cout << "Objectives: " << curt_sln->objective << endl;
-    cout << "Known best: " << prob->known_best << endl;
+    cout << "Known best: " << prob->known_best << endl << endl;
+
+    update_best_solution(curt_sln);
+
     // int cnt = 0;
     // while(!(curt_sln->bins.empty())) {
         // cout << "bin " << cnt << endl;
@@ -233,7 +344,6 @@ int varaible_neighbourhood_search(struct problem_struct* prob){
     // }
 
 /* 
-    update_best_solution(curt_sln);
     
     int shaking_count =0;
     while(time_spent < MAX_TIME) //note that final computational time can be way beyond the MAX_TIME if best_descent is time consuming
@@ -260,11 +370,11 @@ int varaible_neighbourhood_search(struct problem_struct* prob){
         time_spent = (double)(time_fin-time_start)/CLOCKS_PER_SEC;
     }
 
-    //output_solution(&best_sln, "vns_results.txt");
-    free_solution(curt_sln); free(curt_sln);
 */
+    // output_solution(&best_sln, "vns_results.txt");
+    // free_solution(curt_sln); 
+    delete(curt_sln);
 
-    return 0;
 }
 
 
@@ -310,12 +420,13 @@ int main(int argc, const char * argv[]) {
 
         for(int k=0; k<num_of_problems; k++)
         {
+            cout << "Number of question: " << k << endl;
             best_sln.objective=0; best_sln.feasibility=0;
             for(int run=0; run<NUM_OF_RUNS; run++) {
                 printf("Running VNS...\n");
                 varaible_neighbourhood_search(my_problems[k]);
             }
-            output_solution(&best_sln,out_file);
+            // output_solution(&best_sln,out_file);
         }
     }
 

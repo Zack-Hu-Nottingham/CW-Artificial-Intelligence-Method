@@ -34,6 +34,17 @@ struct solution_struct {
     vector<bin_struct> bins;
 };
 
+struct solution_struct* initialize_empty_sol (struct problem_struct* prob) {
+    
+    struct solution_struct* sol = (struct solution_struct*) malloc (sizeof(solution_struct));
+    sol->prob = prob;
+    sol->objective = 0;
+    sol->feasibility = 0;
+    // sol->bins = vector<bin_struct>;
+
+    return sol;
+}
+
 int main() {
     bin_struct* bin = new bin_struct();
     bin->cap_left = 150;
@@ -41,4 +52,5 @@ int main() {
     sol.bins.push_back(*bin);
     bin_struct bin1 = sol.bins.back();
     cout << bin1.cap_left;
+    delete(bin);
 }
