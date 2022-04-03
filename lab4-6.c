@@ -90,6 +90,14 @@ struct problem_struct{
     double best_obj; //best known objective
 };
 
+struct solution_struct{
+    struct problem_struct* prob; //maintain a shallow copy of the problem data
+    float objective;
+    int feasibility; //indicate the feasiblity of the solution
+    int* x; // solution encoding vector 代表有没有被选中
+    int* cap_left; //capacity left in all dimensions
+};
+
 void free_problem(struct problem_struct* prob)
 {
     if(prob!=NULL)
@@ -162,14 +170,6 @@ struct problem_struct** load_problems(char* data_file)
     fclose(pfile); //close file
     return my_problems;
 }
-
-struct solution_struct{
-    struct problem_struct* prob; //maintain a shallow copy of the problem data
-    float objective;
-    int feasibility; //indicate the feasiblity of the solution
-    int* x; // solution encoding vector
-    int* cap_left; //capacity left in all dimensions
-};
 
 void free_solution(struct solution_struct* sln)
 {
