@@ -165,100 +165,160 @@ struct problem_struct** load_problems(char* data_file)
 void output_solution(struct solution_struct* sln, char* out_file) {}
 
 
-bool can_move(int nb_indx, int* move, struct solution_struct* curt_sln ){
-    bool ret=true;
-    if(nb_indx==1)
-    {
-        int i = move[0];
-        if(i<0) return false;
-        for(int d=0; d<curt_sln->prob->dim; d++){
-            if(curt_sln->cap_left[d] < curt_sln->prob->items[i].size[d])
-                return false;
-        }
-    }
-    else if(nb_indx==2){
-        ret=can_swap(curt_sln, move[0], move[1]);
-    }
-    else if(nb_indx==3){//3-item swap
-        int i= move[0], j= move[1], k= move[2];
-        if(i<0 || j<0 || k<0) return false;
-        if(curt_sln->x[j]>0) {//2-1 swap
-            for(int d=0; d<curt_sln->prob->dim; d++){
-                if(curt_sln->cap_left[d] + curt_sln->prob->items[i].size[d] +
-                   curt_sln->prob->items[j].size[d] < curt_sln->prob->items[k].size[d])
-                    return false;
-            }
-        }
-        else {//1-2 swap
-            for(int d=0; d<curt_sln->prob->dim; d++){
-                if(curt_sln->cap_left[d] + curt_sln->prob->items[i].size[d] <
-                   curt_sln->prob->items[j].size[d] + curt_sln->prob->items[k].size[d])
-                    return false;
-            }
-        }
+// bool can_move(int nb_indx, int* move, struct solution_struct* curt_sln ){
+//     bool ret=true;
+//     if(nb_indx==1)
+//     {
+//         int i = move[0];
+//         if(i<0) return false;
+//         for(int d=0; d<curt_sln->prob->dim; d++){
+//             if(curt_sln->cap_left[d] < curt_sln->prob->items[i].size[d])
+//                 return false;
+//         }
+//     }
+//     else if(nb_indx==2){
+//         ret=can_swap(curt_sln, move[0], move[1]);
+//     }
+//     else if(nb_indx==3){//3-item swap
+//         int i= move[0], j= move[1], k= move[2];
+//         if(i<0 || j<0 || k<0) return false;
+//         if(curt_sln->x[j]>0) {//2-1 swap
+//             for(int d=0; d<curt_sln->prob->dim; d++){
+//                 if(curt_sln->cap_left[d] + curt_sln->prob->items[i].size[d] +
+//                    curt_sln->prob->items[j].size[d] < curt_sln->prob->items[k].size[d])
+//                     return false;
+//             }
+//         }
+//         else {//1-2 swap
+//             for(int d=0; d<curt_sln->prob->dim; d++){
+//                 if(curt_sln->cap_left[d] + curt_sln->prob->items[i].size[d] <
+//                    curt_sln->prob->items[j].size[d] + curt_sln->prob->items[k].size[d])
+//                     return false;
+//             }
+//         }
         
-    }
-    else ret=false;
-    return ret;
+//     }
+//     else ret=false;
+//     return ret;
+// }
+
+bool three_item_swap(vector<bin_struct>::iterator bin1, vector<bin_struct>::iterator bin2, vector<bin_struct>::iterator bin3) {
+    cout << "bin1: " <<bin1->cap_left << endl;
+    cout << "bin2: " <<bin2->cap_left << endl;
+    cout << "bin3: " <<bin3->cap_left << endl;
+    cout << endl;
+
+    // for better understanding, rename the two special bins
+    // to minimize the space in bin1, so rename with "to_minimize"
+    vector<bin_struct>::iterator to_minimize = bin1;
+    // to maximize the space in bin3, so rename with "to_maximize"
+    vector<bin_struct>::iterator to_maximize = bin3;
+
+    
+    vector<item_struct>:: iterator item1 = to_minimize->packed_items.end();
+    vector<item_struct>:: iterator item2 = bin2->packed_items.end();
+    vector<item_struct>:: iterator item3 = to_maximize->packed_items.end();
+
+    // for (; item1 != (*to_minimize).begin(); item1--) {
+    //     for (; item2 != (*bin2).begin(); item1--) {
+    //         for (; item3 != (*to_maximize).begin(); item1--) {
+    //         }
+    //     }
+    // }
+
+    return false;
 }
 
 
 //nb_indx <=3
 struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* curt_sln)
 {
-    struct solution_struct* best_neighb = &curt_sln;
+    struct solution_struct* best_neighb = curt_sln;
     
     int n=curt_sln->prob->n;
 
+    vector<bin_struct> * bins = & curt_sln->bins;
+
     //storing best neighbourhood moves
-    int curt_move[] ={-1,-1,-1,-1}, best_move []={-1,-1,-1,-1}, delta=0, best_delta=0;  
+    int curt_move[] ={-1,-1,-1,-1}, best_move []={-1,-1,-1,-1};
+    int delta=0, best_delta=0;  
     
     switch (nb_indx)
     {
         case 3:
-        // 选择三个bin，从中选取可行的交换，为节约时间，建议从最后一个不满的bin开始搜索
-            //2-1 swap
-            for(int i=0; i<n; i++){
-                for(int j=0; j!=i && j<n; j++){
-                    for(int k=0;k<n;k++){
-                        curt_move[0]=i; curt_move[1]=j; curt_move[2]=k;
-                        if(can_move(nb_indx, &curt_move[0], best_neighb)){
-                            delta = curt_sln->prob->items[k].p -curt_sln->prob->items[i].p-curt_sln->prob->items[j].p;
-                            if(delta > best_delta){
-                                best_delta = delta; best_move[0] = i; best_move[1] = j; best_move[2]=k;
-                            }
-                        }
-                    }
-                }
-            }
-            //1-2 swap
-            for(int i=0; i<n; i++){
-                if(curt_sln->x[i]==0) continue;
-                for(int j=0; j<n; j++){
-                    if(curt_sln->x[j]>0) continue;
-                    for(int k=0;k!=j&&k<n;k++){
-                        if(curt_sln->x[k] == 0)
-                        {
-                            curt_move[0]=i; curt_move[1]=j; curt_move[2]=k;
-                            if(can_move(nb_indx, &curt_move[0], curt_sln)){
-                                delta = curt_sln->prob->items[k].p +curt_sln->prob->items[j].p-curt_sln->prob->items[i].p;
-                                if(delta > best_delta){
-                                    best_delta = delta; best_move[0] = i; best_move[1] = j; best_move[2]=k;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if(best_delta>0) { apply_move(nb_indx, &best_move[0], best_neighb);}
-            break;
-        
-        case 4:
+            // three iterators to represent three bins
+            vector<bin_struct>:: iterator bin1 = (*bins).end();
+            vector<bin_struct>:: iterator bin2 = (*bins).begin();
+            vector<bin_struct>:: iterator bin3 = (*bins).begin();
 
+            // here, I choose first descent to minimize time consumption
+            // 2-1 swap
+            // select three bins that are not full, and try all kinds of swap between bins
+            // for (; bin1 != (*bins).begin(); --bin1) {
+            //     if (bin1->cap_left == 0) continue;
+            //     for (; bin1 != bin2 && bin2 != (*bins).end(); ++bin2) {
+            //     // for (; bin1 != bin2 && bin2 != (*bins).end(); bin2++) {
+            //         if (bin2->cap_left == 0) continue;
+            //         for (; bin3 != bin1 && bin3 != bin2 && bin3 != (*bins).end(); ++bin3) {
+            //             if (bin3->cap_left == 0) continue;
+            //             three_item_swap(bin1, bin2, bin3);
+            //         }
+            //     }
+            // }
+
+            for (; bin1 != (*bins).begin(); --bin1) {
+                if (bin1->cap_left == 0) continue;
+                for (; bin2 != (*bins).end(); bin2++) {
+                    if (bin2->cap_left == 0 || bin2 <= bin1) continue;
+                    for (; bin3 != (*bins).end(); ++bin3) {
+                        if (bin3->cap_left == 0 || bin3 <= bin2) continue;
+                        three_item_swap(bin1, bin2, bin3);
+                    }
+                }
+            }
+
+            //2-1 swap
+            // for(int i=0; i<n; i++){
+            //     for(int j=0; j!=i && j<n; j++){
+            //         for(int k=0;k<n;k++){
+            //             curt_move[0]=i; curt_move[1]=j; curt_move[2]=k;
+            //             if(can_move(nb_indx, &curt_move[0], best_neighb)){
+            //                 delta = curt_sln->prob->items[k].p -curt_sln->prob->items[i].p-curt_sln->prob->items[j].p;
+            //                 if(delta > best_delta){
+            //                     best_delta = delta; best_move[0] = i; best_move[1] = j; best_move[2]=k;
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+            // //1-2 swap
+            // for(int i=0; i<n; i++){
+            //     if(curt_sln->x[i]==0) continue;
+            //     for(int j=0; j<n; j++){
+            //         if(curt_sln->x[j]>0) continue;
+            //         for(int k=0;k!=j&&k<n;k++){
+            //             if(curt_sln->x[k] == 0)
+            //             {
+            //                 curt_move[0]=i; curt_move[1]=j; curt_move[2]=k;
+            //                 if(can_move(nb_indx, &curt_move[0], curt_sln)){
+            //                     delta = curt_sln->prob->items[k].p +curt_sln->prob->items[j].p-curt_sln->prob->items[i].p;
+            //                     if(delta > best_delta){
+            //                         best_delta = delta; best_move[0] = i; best_move[1] = j; best_move[2]=k;
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+            // if(best_delta>0) { apply_move(nb_indx, &best_move[0], best_neighb);}
             break;
         
-        default:
-            printf("Neighbourhood index is out of the bounds, nothing is done!\n");
+        // case 4:
+
+            // break;
+        
+        // default:
+            // printf("Neighbourhood index is out of the bounds, nothing is done!\n");
     }
     return best_neighb;
 }
@@ -414,37 +474,34 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
 
     update_best_solution(curt_sln);
 
-    // int cnt = 0;
-    // while(!(curt_sln->bins.empty())) {
-        // cout << "bin " << cnt << endl;
-        // cout << curt_sln->bins.at(cnt).cap_left << endl;
-        // cnt ++;
-    // }
+    struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
 
-    int shaking_count =0;
-    while(time_spent < MAX_TIME) //note that final computational time can be way beyond the MAX_TIME if best_descent is time consuming
-    {
-        while(nb_indx<K){
-            struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-            if(neighb_s->objective > curt_sln->objective){
-                copy_solution(curt_sln, neighb_s);
-                nb_indx=1;
-            }
-            else nb_indx++;
-            free_solution(neighb_s);free(neighb_s);
-        }
-        update_best_solution(curt_sln);
-        double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
-        if(best_sln.prob->best_obj!=0) gap=  100*(best_sln.prob->best_obj - best_sln.objective)/best_sln.prob->best_obj;
-        printf("shaking_count=%d, curt obj =%0.0f,\t best obj=%0.0f,\t gap= %0.2f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
-        vns_shaking(curt_sln, SHAKE_STRENGTH); //shaking at a given strength. This can be made adaptive
-        //vns_shaking(curt_sln, shaking_count/100+1); //re-active shaking
-        shaking_count++;
-        nb_indx=0;
+
+
+    // int shaking_count =0;
+    // while(time_spent < MAX_TIME) //note that final computational time can be way beyond the MAX_TIME if best_descent is time consuming
+    // {
+    //     while(nb_indx<K){
+    //         struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
+    //         if(neighb_s->objective > curt_sln->objective){
+    //             copy_solution(curt_sln, neighb_s);
+    //             nb_indx=1;
+    //         }
+    //         else nb_indx++;
+    //         free_solution(neighb_s);free(neighb_s);
+    //     }
+    //     update_best_solution(curt_sln);
+    //     double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
+    //     if(best_sln.prob->best_obj!=0) gap=  100*(best_sln.prob->best_obj - best_sln.objective)/best_sln.prob->best_obj;
+    //     printf("shaking_count=%d, curt obj =%0.0f,\t best obj=%0.0f,\t gap= %0.2f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
+    //     vns_shaking(curt_sln, SHAKE_STRENGTH); //shaking at a given strength. This can be made adaptive
+    //     //vns_shaking(curt_sln, shaking_count/100+1); //re-active shaking
+    //     shaking_count++;
+    //     nb_indx=0;
         
-        time_fin=clock();
-        time_spent = (double)(time_fin-time_start)/CLOCKS_PER_SEC;
-    }
+    //     time_fin=clock();
+    //     time_spent = (double)(time_fin-time_start)/CLOCKS_PER_SEC;
+    // }
 
 
     // output_solution(&best_sln, "vns_results.txt");
