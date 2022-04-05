@@ -202,29 +202,50 @@ void output_solution(struct solution_struct* sln, char* out_file) {}
 //     return ret;
 // }
 
-bool three_item_swap(vector<bin_struct>::iterator bin1, vector<bin_struct>::iterator bin2, vector<bin_struct>::iterator bin3) {
-    cout << "bin1: " <<bin1->cap_left << endl;
-    cout << "bin2: " <<bin2->cap_left << endl;
-    cout << "bin3: " <<bin3->cap_left << endl;
-    cout << endl;
+bool three_item_swap(bin_struct bin1, bin_struct bin2, bin_struct bin3) {
+    // cout << "bin1: " <<bin1->cap_left << endl;
+    // cout << "bin2: " <<bin2->cap_left << endl;
+    // cout << "bin3: " <<bin3->cap_left << endl;
+    // cout << endl;
 
-    // for better understanding, rename the two special bins
-    // to minimize the space in bin1, so rename with "to_minimize"
-    vector<bin_struct>::iterator to_minimize = bin1;
-    // to maximize the space in bin3, so rename with "to_maximize"
-    vector<bin_struct>::iterator to_maximize = bin3;
+    // // for better understanding, rename the two special bins
+    // // to minimize the space in bin1, so rename with "to_minimize"
+    // vector<bin_struct>::iterator to_minimize = bin1;
+    // // to maximize the space in bin3, so rename with "to_maximize"
+    // vector<bin_struct>::iterator to_maximize = bin3;
 
-    
-    vector<item_struct>:: iterator item1 = to_minimize->packed_items.end();
-    vector<item_struct>:: iterator item2 = bin2->packed_items.end();
-    vector<item_struct>:: iterator item3 = to_maximize->packed_items.end();
+    item_struct item1, item2, item3;
 
-    // for (; item1 != (*to_minimize).begin(); item1--) {
-    //     for (; item2 != (*bin2).begin(); item1--) {
-    //         for (; item3 != (*to_maximize).begin(); item1--) {
-    //         }
-    //     }
-    // }
+    int cap_left1 = bin1.cap_left;
+    int cap_left2 = bin2.cap_left;
+
+    for (int i=0; i<bin1.packed_items.size(); i++) {
+        for (int j=0; j<bin2.packed_items.size(); j++) {
+            for (int k=0; k<bin3.packed_items.size(); k++) {
+                item1 = bin1.packed_items[i];
+                item2 = bin2.packed_items[j];
+                item3 = bin3.packed_items[k];
+                
+                // tell if could swap
+                if (item2.size + item3.size <= cap_left1 + item1.size) {
+                    if (item1.size <= cap_left2 + item2.size) {
+                        // all satisfied, then swap
+                        bin1.packed_items.erase(bin1.packed_items.begin() + i);
+                        bin2.packed_items.erase(bin2.packed_items.begin() + j);
+                        bin3.packed_items.erase(bin3.packed_items.begin() + k);
+
+                        bin1.packed_items.push_back(item2); // add item2 to bin1
+                        bin1.packed_items.push_back(item3); // add item3 to bin1
+                        bin2.packed_items.push_back(item1); // add item1 to bin2
+                        cout << "happen" << endl;
+                        // if (bin3.packed_items.size() == 0) {
+                        //     cout << "objective -1 " << endl;
+                        // }
+                    }
+                }
+            }
+        }
+    }
 
     return false;
 }
@@ -247,35 +268,26 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
     {
         case 3:
             // three iterators to represent three bins
-            vector<bin_struct>:: iterator bin1 = (*bins).end();
-            vector<bin_struct>:: iterator bin2 = (*bins).begin();
-            vector<bin_struct>:: iterator bin3 = (*bins).begin();
+            vector<bin_struct>:: iterator bin1, bin2, bin3;
 
+            int cnt = 0;
             // here, I choose first descent to minimize time consumption
             // 2-1 swap
             // select three bins that are not full, and try all kinds of swap between bins
-            // for (; bin1 != (*bins).begin(); --bin1) {
-            //     if (bin1->cap_left == 0) continue;
-            //     for (; bin1 != bin2 && bin2 != (*bins).end(); ++bin2) {
-            //     // for (; bin1 != bin2 && bin2 != (*bins).end(); bin2++) {
-            //         if (bin2->cap_left == 0) continue;
-            //         for (; bin3 != bin1 && bin3 != bin2 && bin3 != (*bins).end(); ++bin3) {
-            //             if (bin3->cap_left == 0) continue;
-            //             three_item_swap(bin1, bin2, bin3);
-            //         }
-            //     }
-            // }
-
-            for (; bin1 != (*bins).begin(); --bin1) {
+            for (bin1 = (*bins).begin(); bin1 != (*bins).end(); ++bin1) {
                 if (bin1->cap_left == 0) continue;
-                for (; bin2 != (*bins).end(); bin2++) {
-                    if (bin2->cap_left == 0 || bin2 <= bin1) continue;
-                    for (; bin3 != (*bins).end(); ++bin3) {
-                        if (bin3->cap_left == 0 || bin3 <= bin2) continue;
-                        three_item_swap(bin1, bin2, bin3);
+
+                for (bin2 = bin1+1; bin2 != (*bins).end(); ++bin2) {
+                    if (bin2->cap_left == 0) continue;
+
+                    for (bin3 = bin2+1; bin3 != (*bins).end(); ++bin3) {
+                        if (bin3->cap_left == 0) continue;
+                        three_item_swap(*bin1, *bin2, *bin3);
+                        ++ cnt;
                     }
                 }
             }
+
 
             //2-1 swap
             // for(int i=0; i<n; i++){

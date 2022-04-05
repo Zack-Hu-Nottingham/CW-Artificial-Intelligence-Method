@@ -47,10 +47,8 @@ struct solution_struct* initialize_empty_sol (struct problem_struct* prob) {
 
 int main() {
     bin_struct* bin = new bin_struct();
-    bin->cap_left = 150;
-    solution_struct sol;
-    sol.bins.push_back(*bin);
-    bin_struct bin1 = sol.bins.back();
-    cout << bin1.cap_left;
+    bin->cap_left = 10;
+    bin_struct tmp = *bin;
     delete(bin);
+    cout << tmp.cap_left;
 }
