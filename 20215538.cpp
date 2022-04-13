@@ -22,6 +22,7 @@ struct bin_struct {
 };
 
 struct problem_struct{
+    char name[10];
     int n; //number of items
     int capacities;  //knapsack capacities
     int known_best;
@@ -61,9 +62,11 @@ int cmpfunc2(const void* a, const void* b){
     return 0;
 }
 
-void init_problem(int n, int capacities, int known_best, struct problem_struct** my_prob)
+void init_problem(char* name, int n, int capacities, int known_best, struct problem_struct** my_prob)
 {
     struct problem_struct* new_prob = (struct problem_struct*) malloc(sizeof(struct problem_struct));
+    strcpy(new_prob->name, name);
+
     new_prob->n=n; new_prob->capacities=capacities; new_prob->known_best=known_best;
     new_prob->items= (struct item_struct*) malloc(sizeof(struct item_struct)*n);
     // for(int j=0; j<n; j++)
@@ -84,29 +87,20 @@ void free_problem(struct problem_struct* prob)
     }
 }
 
+//copy可能存在很多问题
+
 //copy a solution from another solution
 bool copy_solution(struct solution_struct* dest_sln, struct solution_struct* source_sln)
 {
-    // if(source_sln ==NULL) return false;
-    // if(dest_sln==NULL)
-    // {
-    //     dest_sln = malloc(sizeof(struct solution_struct));
-    // }
-    // else{
-    //     free(dest_sln->cap_left);
-    //     free(dest_sln->x);
-    // }
-    // int n = source_sln->prob->n;
-    // int m =source_sln->prob->dim;
-    // dest_sln->x = malloc(sizeof(int)*n);
-    // dest_sln->cap_left=malloc(sizeof(int)*m);
-    // for(int i=0; i<m; i++)
-    //     dest_sln->cap_left[i]= source_sln->cap_left[i];
-    // for(int j=0; j<n; j++)
-    //     dest_sln->x[j] = source_sln->x[j];
-    // dest_sln->prob= source_sln->prob;
-    // dest_sln->feasibility=source_sln->feasibility;
-    // dest_sln->objective=source_sln->objective;
+    if(source_sln ==NULL) return false;
+    if(dest_sln==NULL)
+    {
+        dest_sln = (struct solution_struct*) malloc(sizeof(struct solution_struct));
+    }
+    dest_sln->prob = source_sln->prob;
+    dest_sln->feasibility = source_sln->feasibility;
+    dest_sln->objective = source_sln->objective;
+    dest_sln->bins = source_sln->bins;
     return true;
 }
 
@@ -145,9 +139,9 @@ struct problem_struct** load_problems(char* data_file)
         fscanf (pfile, "%d", &n); 
         fscanf (pfile, "%d", &known_best);
         // printf("Name: %s, capacities: %d, item number: %d, known_best: %d\n", name, capacities, n, known_best);
-        
+
         // Initialize problem
-        init_problem(n, capacities, known_best, &my_problems[k]);  //allocate data memory
+        init_problem(name, n, capacities, known_best, &my_problems[k]);  //allocate data memory
         for(j=0; j<n; j++)
         {
             my_problems[k]->items[j].index=j;
@@ -163,7 +157,21 @@ struct problem_struct** load_problems(char* data_file)
 
 
 //output a given solution to a file
-void output_solution(struct solution_struct* sln, char* out_file) {}
+void output_solution(struct solution_struct* sln, char* out_file) {
+    FILE* pfile = fopen(out_file, "a"); //open a new file
+
+    fprintf(pfile, "%s\n", sln->prob->name); 
+    fprintf(pfile, " obj=   %d   %d\n", sln->objective, sln->objective - sln->prob->known_best); 
+    for (int i=0; i<sln->bins.size(); i++) {
+        for (int j=0; j<sln->bins[i].packed_items.size(); j++) {
+            fprintf(pfile, "%d ", sln->bins[i].packed_items[j].index); 
+        }
+        fprintf(pfile, "\n"); 
+    }
+
+    fclose(pfile);
+
+}
 
 
 // bool can_move(int nb_indx, int* move, struct solution_struct* curt_sln ){
@@ -652,12 +660,12 @@ int main(int argc, const char * argv[]) {
         for(int k=0; k<num_of_problems; k++)
         {
             cout << "Number of question: " << k << endl;
-            best_sln.objective=0; best_sln.feasibility=0;
+            best_sln.objective=1000; best_sln.feasibility=0;
             for(int run=0; run<NUM_OF_RUNS; run++) {
                 printf("Running VNS...\n");
                 varaible_neighbourhood_search(my_problems[k]);
             }
-            // output_solution(&best_sln,out_file);
+            output_solution(&best_sln,out_file);
         }
     }
 

@@ -46,9 +46,11 @@ struct solution_struct* initialize_empty_sol (struct problem_struct* prob) {
 }
 
 int main() {
-    bin_struct* bin = new bin_struct();
-    bin->cap_left = 10;
-    bin_struct tmp = *bin;
-    delete(bin);
-    cout << tmp.cap_left;
+
+    vector<int> vect1{1, 2, 3, 4};
+    vector<int> vect2{3,4,5,6};
+    vect2 = vect1;
+    for (int i=0; i<vect2.size(); i++) {
+        cout << vect2[i] << " ";
+    }
 }
