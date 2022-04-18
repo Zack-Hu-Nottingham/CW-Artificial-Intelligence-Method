@@ -164,11 +164,11 @@ void output_solution(struct solution_struct* sln, char* out_file) {
     fprintf(pfile, "%s\n", sln->prob->name); 
     fprintf(pfile, " obj=   %d   %d\n", sln->objective, sln->objective - sln->prob->known_best); 
     for (int i=0; i<sln->bins.size(); i++) {
-        fprintf(pfile, "bin %d: ", i);
+        // fprintf(pfile, "bin %d: ", i);
         for (int j=0; j<sln->bins[i].packed_items.size(); j++) {
-            fprintf(pfile, "%d ", sln->bins[i].packed_items[j].size); 
+            fprintf(pfile, "%d ", sln->bins[i].packed_items[j].index); 
         }
-        fprintf(pfile, "%d", sln->bins[i].cap_left);
+        // fprintf(pfile, "%d", sln->bins[i].cap_left);
         fprintf(pfile, "\n");  // 如果跟据bin的数量来判断会多出空行，因为有空bin没被删去
     }
 
@@ -176,9 +176,8 @@ void output_solution(struct solution_struct* sln, char* out_file) {
 
 }
 
-
-bool three_item_swap(bin_struct* bin1, bin_struct* bin2, bin_struct* bin3, int a, int b, int c, vector<bin_struct> * bins) {
-    int answer = 0;
+// 
+void three_item_swap(bin_struct* bin1, bin_struct* bin2, bin_struct* bin3, int a, int b, int c,  struct solution_struct* sln) {
 
     int cap1, cap2, cap3;
     int cap1_after, cap2_after, cap3_after;
@@ -278,23 +277,19 @@ bool three_item_swap(bin_struct* bin1, bin_struct* bin2, bin_struct* bin3, int a
 
                         if (bin3->packed_items.size() == 0) {
                             cout << "objective -1 " << endl;
-                            bins->erase(bins->begin() + c);
-                            answer += 1;
-                            cout << "answer is: " << answer << endl;
+                            sln->bins.erase(sln->bins.begin() + c);
+                            sln->objective -= 1;
                         }
                     }
                 }
             }
         }
     }
-    if (answer != 0) {
-        cout << "return answer: " << answer << endl;
-    }
-    return answer;
+    return ;
 }
 
-// index is the index for bin1
-void one_swap(bin_struct* bin1, bin_struct* bin2, int index, struct solution_struct* sln) {// bin1在后面
+// This 
+void one_swap(bin_struct* bin1, bin_struct* bin2, int index, struct solution_struct* sln) {
     item_struct item;
     for (int i=0; i<bin1->packed_items.size(); i++) {
         item = bin1->packed_items[i];
@@ -314,7 +309,6 @@ void one_swap(bin_struct* bin1, bin_struct* bin2, int index, struct solution_str
     }
 }
 
-// bin2是后面的那个桶
 void two_one_swap(bin_struct* bin1, bin_struct* bin2, struct solution_struct* sln) {
     bool isFound = false;
     item_struct item1, item2, item3;
@@ -326,15 +320,8 @@ void two_one_swap(bin_struct* bin1, bin_struct* bin2, struct solution_struct* sl
             for (int k=j+1; k<bin2->packed_items.size(); k++) {
                 item3 = bin2->packed_items[k];
                 if (item2.size + item3.size == item1.size + bin1->cap_left) {
-                    // cout << "i=" << i << " j=" << j << " k=" << k << endl;
-                    // cout << "bin1 cap left=" << bin1->cap_left << endl;
-                    // cout << "item1 size=" << item1.size << endl;
-                    // cout << "item2 size=" << item2.size << endl;
-                    // cout << "item3 size=" << item3.size << endl;
 
-
-
-                    // 从bin1中删去
+                    // 从bin1中删去item1
                     bin1->packed_items.erase(bin1->packed_items.begin() + i);
                     bin1->packed_items.push_back(item2);
                     bin1->packed_items.push_back(item3);
@@ -343,19 +330,14 @@ void two_one_swap(bin_struct* bin1, bin_struct* bin2, struct solution_struct* sl
                         cout << "ERROR!!!!!!!!!" << endl;
                     }
                     
-                    // 从bin2中
+                    // delete item2 and item3 from bin2
                     bin2->packed_items.erase(bin2->packed_items.begin() + j);
                     bin2->packed_items.erase(bin2->packed_items.begin() + k-1);
                     bin2->packed_items.push_back(item1);
                     bin2->cap_left = bin2->cap_left + item2.size + item3.size - item1.size;
                     return ;
-                    // isFound = true;
-                    // break;
                 }
             }
-            // if (isFound) {
-            //     continue;
-            // }
         }
     }
 }
@@ -370,8 +352,8 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
     vector<bin_struct> * bins = & curt_sln->bins;
 
     //storing best neighbourhood moves
-    int curt_move[] ={-1,-1,-1,-1}, best_move []={-1,-1,-1,-1};
-    int delta=0, best_delta=0;  
+    // int curt_move[] ={-1,-1,-1,-1}, best_move []={-1,-1,-1,-1};
+    // int delta=0, best_delta=0;  
     
     bin_struct* bin1;
     bin_struct* bin2;
@@ -380,9 +362,10 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
     switch (nb_indx)
     {
         case 1:
-            for (int i=bins->size()-1; i>0; i-- ) { // 从后往前搜索，第一个桶
+            // search from back to front, bin1 is the bin with higher index
+            for (int i=bins->size()-1; i>0; i-- ) { 
                 bin1 = &(*(bins->begin() + i));
-                for (int j=i-1; j>0; j-- ) { // 从后往前搜索，第二个桶
+                for (int j=i-1; j>0; j-- ) { 
                     bin2 = &(*(bins->begin() + j));
                     one_swap(bin1, bin2, i, curt_sln);
                 }
@@ -390,30 +373,23 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
 
             
 
-        case 3:
-            // here, I choose first descent to minimize time consumption
-            // 2-1 swap
+        case 3:            
+            // 1 - 1 - 1 swap
             // select three bins that are not full, and try all kinds of swap between bins
-            // int dif = 0;
-
             for (int i=0; i<bins->size(); i++) {
-                bin1 = &(*(bins->begin() + i));
                 if (bin1->cap_left == 0) continue;
+                bin1 = &(*(bins->begin() + i));
                 for (int j=i+1; j<bins->size(); j++) {
-                    bin2 = &(*(bins->begin() + j));
                     if (bin2->cap_left == 0) continue;
+                    bin2 = &(*(bins->begin() + j));
                     for (int k=j+1; k<bins->size(); k++) {
-                        bin3 = &(*(bins->begin() + k));
                         if (bin3->cap_left == 0) continue;
+                        bin3 = &(*(bins->begin() + k));
 
-                        int dif = 0;
-
-                        dif = three_item_swap(bin1, bin2, bin3, i, j, k, bins);
-                        if (dif != 0) {
-                            cout << "difference = " << dif << endl;
-                        }
-                        curt_sln->objective -= dif;
-                        if (bin1->cap_left == 0 || bin2->cap_left == 0) { // if after swap either bin1 or bin2 full, break
+                        three_item_swap(bin1, bin2, bin3, i, j, k, curt_sln);
+                        
+                        if (bin1->cap_left == 0 || bin2->cap_left == 0) { 
+                            // if after swap either bin1 or bin2 full, break
                             break;
                         }
                     }
@@ -440,30 +416,6 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                     two_one_swap(bin1, bin2, curt_sln);
                 }
             }
-
-
-
-            // bin_struct* bin36 = &(*(bins->begin() + 36));
-            // cout << "hey!" << endl;
-            // for (int i=0; i<bin36->packed_items.size(); i++) {
-            //     printf("%d ", bin36->packed_items[i].size);
-            // }
-            // cout << endl;
-
-            
-            // for (bin1 = (*bins).begin(); bin1 != (*bins).end(); ++bin1) {
-            //     if (bin1->cap_left == 0) continue;
-
-            //     for (bin2 = bin1+1; bin2 != (*bins).end(); ++bin2) {
-            //         if (bin2->cap_left == 0) continue;
-
-            //         for (bin3 = bin2+1; bin3 != (*bins).end(); ++bin3) {
-            //             if (bin3->cap_left == 0) continue;
-            //             three_item_swap(*bin1, *bin2, *bin3);
-            //             ++ cnt;
-            //         }
-            //     }
-            // }
 
 
             //2-1 swap
@@ -596,49 +548,35 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
     
     best_sln.prob = prob;
     struct solution_struct* curt_sln = greedy_heuristic(prob);
+    update_best_solution(curt_sln);
 
     // Test code here
     cout << "Initialize a possible answer: " << endl;
-    cout << "Objectives: " << curt_sln->objective << endl;
-    cout << "Known best: " << prob->known_best << endl << endl;
+    cout << "Objectives: " << best_sln.objective << endl;
+    cout << "Known best: " << best_sln.known_best << endl << endl;
 
-    update_best_solution(curt_sln);
-    cout << "Initialize, objective=" << best_sln.objective << endl;
 
+    while(time_spent < MAX_TIME) {
+        while(nb_indx < K) {
+            struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, )
+            if (neighb_s->objective < curt_sln->objective) {
+                copy_solution(curt_sln, neighb_s);
+            }
+        }
+    }
 
     struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
 
     update_best_solution(neighb_s);
-    cout << "After three swap, objective=" << best_sln.objective << endl;
+    // cout << "After three swap, objective=" << best_sln.objective << endl;
     
     nb_indx = 0;
     
     neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
 
     update_best_solution(neighb_s);
-    cout << "After one swap, objective=" << best_sln.objective << endl;
+    // cout << "After one swap, objective=" << best_sln.objective << endl;
     
-
-    // vector<bin_struct>* bar = &(neighb_s->bins);
-    // bin_struct* bin36 = &(*(bar->begin() + 36));
-    // cout << "hey!" << endl;
-    // for (int i=0; i<bin36->packed_items.size(); i++) {
-    //     printf("%d ", bin36->packed_items[i].size);
-    // }
-    // cout << endl;
-    // cout << neighb_s->objective << endl;
-    // cout << best_sln.objective << endl;
-
-
-    // bar = &(best_sln.bins);
-    // bin36 = &(*(bar->begin() + 36));
-    // cout << "hey!" << endl;
-    // for (int i=0; i<bin36->packed_items.size(); i++) {
-    //     printf("%d ", bin36->packed_items[i].size);
-    // }
-    // cout << endl;
-    
-
 
     cout << "After VNS " << endl;
     cout << "Objectives: " << curt_sln->objective << endl;
