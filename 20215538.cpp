@@ -352,8 +352,8 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
     vector<bin_struct> * bins = & curt_sln->bins;
 
     //storing best neighbourhood moves
-    // int curt_move[] ={-1,-1,-1,-1}, best_move []={-1,-1,-1,-1};
-    // int delta=0, best_delta=0;  
+    int curt_move[] ={-1,-1, -1,-1, -1,-1}, best_move []={-1,-1, -1,-1, -1,-1};
+    int delta=0, best_delta=0;  
     
     bin_struct* bin1;
     bin_struct* bin2;
