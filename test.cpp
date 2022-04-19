@@ -44,6 +44,7 @@ int RAND_SEED[] = {1,20,30,40,50,60,70,80,90,100,110, 120, 130, 140, 150, 160, 1
 int NUM_OF_RUNS = 1;
 int MAX_TIME = 30;  //max amount of time permited (in sec)
 int num_of_problems;
+bool isImproving;
 
 
 int cmpfunc1(const void* a, const void* b){
@@ -338,6 +339,9 @@ int can_move(vector<bin_struct> *bins, int* curt_move, int nb_indx) {
                                 curt_move[5] = k;
 
                             delta = item2.size + item3.size - item1.size;
+                            if (item2.size + item3.size == cap_left1 + item1.size) {
+                                return 1000;
+                            }
                             return delta;
                         }
                     }
@@ -411,14 +415,20 @@ void apply_move(int nb_indx, int* best_move, struct solution_struct* best_neighb
             item1_idx = best_move[1];
             item2_idx = best_move[3];
             item3_idx = best_move[5];
-
+    
+            if (item1_idx == -1 || item2_idx == -1 || item3_idx == -1) {
+                cout << "invalid move" <<endl;
+                break;
+            }
             bin1 = &(*(bins->begin() + bin1_idx));
             bin2 = &(*(bins->begin() + bin2_idx));
             bin3 = &(*(bins->begin() + bin3_idx));
 
+
             item1 = bin1->packed_items[item1_idx];
-            item2 = bin1->packed_items[item2_idx];
-            item3 = bin1->packed_items[item3_idx];
+            item2 = bin2->packed_items[item2_idx];
+            item3 = bin3->packed_items[item3_idx];
+
 
             // swap part
             bin1->cap_left = bin1->cap_left - item2.size - item3.size + item1.size;
@@ -433,7 +443,6 @@ void apply_move(int nb_indx, int* best_move, struct solution_struct* best_neighb
             bin1->packed_items.push_back(item2); // add item2 to bin1
             bin1->packed_items.push_back(item3); // add item3 to bin1
             bin2->packed_items.push_back(item1); // add item1 to bin2
-
 
             if (bin3->packed_items.size() == 0) {
                 cout << "objective -1 " << endl;
@@ -496,7 +505,26 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
 
     switch (nb_indx)
     {
-        case 1:
+        case 3: {
+            for (int i=0; i<bins->size(); i++) {
+                bin1 = &(*(bins->begin() + i));
+                if (bin1->cap_left == 0) continue;
+                for (int j=i+1; j<bins->size(); j++) {
+                    bin2 = &(*(bins->begin() + j));
+                    if (bin2->cap_left == 0) continue;
+                    
+                    curt_move[0] = i;
+                    curt_move[2] = j;
+
+                    delta = can_move(bins, &curt_move[0], nb_indx);
+                    if (delta)
+
+                    two_one_swap(bin1, bin2, curt_sln);
+                }
+            }
+        }
+
+        case 2: {
             // search from back to front, bin1 is the bin with higher index
             for (int i=bins->size()-1; i>0; i-- ) { 
                 bin1 = &(*(bins->begin() + i));
@@ -505,27 +533,34 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                     one_swap(bin1, bin2, i, curt_sln);
                 }
             }
-
+        }
             
-        case 3:            
+        case 1: {
             // 1 - 1 - 1 swap
             // select three bins that are not full, and try all kinds of swap between bins
             for (int i=0; i<bins->size(); i++) {
-                if (bin1->cap_left == 0) continue;
                 bin1 = &(*(bins->begin() + i));
+                if (bin1->cap_left == 0) continue;
                 for (int j=i+1; j<bins->size(); j++) {
-                    if (bin2->cap_left == 0) continue;
                     bin2 = &(*(bins->begin() + j));
+                    if (bin2->cap_left == 0) continue;
                     for (int k=j+1; k<bins->size(); k++) {
-                        if (bin3->cap_left == 0) continue;
                         bin3 = &(*(bins->begin() + k));
+                        if (bin3->cap_left == 0) continue;
 
                         curt_move[0] = i;
                         curt_move[2] = j;
                         curt_move[4] = k;
 
                         delta = can_move(bins, &curt_move[0], nb_indx);
+                        if (delta ==  1000) {
+                            isImproving = true;
+
+                            apply_move(nb_indx, &curt_move[0], best_neighb);
+                            break;
+                        }
                         if (delta >= best_delta) {
+                            isImproving = true;
                             best_delta = delta;
                             copy_move(&curt_move[0], &best_move[0]);
                         }
@@ -541,20 +576,15 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             // bin3 = NULL;
             // // 2-1 swap
             
-            // for (int i=0; i<bins->size(); i++) {
-            //     bin1 = &(*(bins->begin() + i));
-            //     if (bin1->cap_left == 0) continue;
-            //     for (int j=i+1; j<bins->size(); j++) {
-            //         bin2 = &(*(bins->begin() + j));
-            //         if (bin2->cap_left == 0) continue;
-
-            //         two_one_swap(bin1, bin2, curt_sln);
-            //     }
-            // }
 
 
-            if(best_delta>0) { apply_move(nb_indx, &best_move[0], best_neighb);}
+            if(best_delta>0) { 
+                isImproving = true;
+                apply_move(nb_indx, &best_move[0], best_neighb);
+            }
+
             break;
+        }
         
     }
     return best_neighb;
@@ -659,7 +689,6 @@ void vns_shaking(struct solution_struct* sln, int strength)
     }
 }
 
-// void varaible_neighbourhood_search(struct problem_struct* prob) {
 void varaible_neighbourhood_search(struct problem_struct* prob){
     clock_t time_start, time_fin;
     time_start = clock();
@@ -675,76 +704,37 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
     cout << "Objectives: " << best_sln.objective << endl;
     cout << "Known best: " << prob->known_best << endl << endl;
 
+
     int shaking_count =0;
     while(time_spent < MAX_TIME) {
-        // cout << "here" << endl;
+
         // while(nb_indx < K) {
             struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln);
 
-            if (neighb_s->objective < curt_sln->objective) {
+            if (isImproving) {
                 copy_solution(curt_sln, neighb_s);
-                nb_indx++;
+                cout << curt_sln->objective << endl;
+                nb_indx=0;
             }
-            else nb_indx ++;
-            delete(neighb_s);
+            isImproving = false;
+            
+            if (curt_sln->objective == curt_sln->prob->known_best) {
+                break;
+            }
+            // delete(neighb_s);
         // }
-        update_best_solution(curt_sln);
-        double gap = 1000;
-        gap = (best_sln.prob->known_best - best_sln.objective) / best_sln.prob->known_best;
+        // update_best_solution(curt_sln);
+        // double gap = 1000;
+        // gap = (best_sln.prob->known_best - best_sln.objective) / best_sln.prob->known_best;
         // vns_shaking(curt_sln, SHAKE_STRENGTH);
         // shaking_count ++;
         // nb_indx = 0;
         
-        break;
+    //     break;
 
-        // time_fin = clock();
-        // time_spent = (double) (time_fin - time_start) /CLOCKS_PER_SEC;
+        time_fin = clock();
+        time_spent = (double) (time_fin - time_start) /CLOCKS_PER_SEC;
     }
-
-    delete(curt_sln);
-
-    struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-
-    update_best_solution(neighb_s);
-    // cout << "After three swap, objective=" << best_sln.objective << endl;
-    
-    nb_indx = 0;
-    
-    neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-
-    update_best_solution(neighb_s);
-    // cout << "After one swap, objective=" << best_sln.objective << endl;
-    
-
-    cout << "After VNS " << endl;
-    cout << "Objectives: " << curt_sln->objective << endl;
-    cout << "Known best: " << prob->known_best << endl << endl;
-
-
-    // int shaking_count =0;
-    // while(time_spent < MAX_TIME) //note that final computational time can be way beyond the MAX_TIME if best_descent is time consuming
-    // {
-    //     while(nb_indx<K){
-    //         struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-    //         if(neighb_s->objective > curt_sln->objective){
-    //             copy_solution(curt_sln, neighb_s);
-    //             nb_indx=1;
-    //         }
-    //         else nb_indx++;
-    //         free_solution(neighb_s);free(neighb_s);
-    //     }
-    //     update_best_solution(curt_sln);
-    //     double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
-    //     if(best_sln.prob->best_obj!=0) gap=  100*(best_sln.prob->best_obj - best_sln.objective)/best_sln.prob->best_obj;
-    //     printf("shaking_count=%d, curt obj =%0.0f,\t best obj=%0.0f,\t gap= %0.2f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
-    //     vns_shaking(curt_sln, SHAKE_STRENGTH); //shaking at a given strength. This can be made adaptive
-    //     //vns_shaking(curt_sln, shaking_count/100+1); //re-active shaking
-    //     shaking_count++;
-    //     nb_indx=0;
-        
-    //     time_fin=clock();
-    //     time_spent = (double)(time_fin-time_start)/CLOCKS_PER_SEC;
-    // }
 
 
     // output_solution(&best_sln, "vns_results.txt");
