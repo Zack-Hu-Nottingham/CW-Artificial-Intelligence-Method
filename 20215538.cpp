@@ -378,13 +378,13 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             // select three bins that are not full, and try all kinds of swap between bins
             for (int i=0; i<bins->size(); i++) {
                 if (bin1->cap_left == 0) continue;
-                bin1 = &(*(bins->begin() + i));
+                // bin1 = &(*(bins->begin() + i));
                 for (int j=i+1; j<bins->size(); j++) {
                     if (bin2->cap_left == 0) continue;
-                    bin2 = &(*(bins->begin() + j));
+                    // bin2 = &(*(bins->begin() + j));
                     for (int k=j+1; k<bins->size(); k++) {
                         if (bin3->cap_left == 0) continue;
-                        bin3 = &(*(bins->begin() + k));
+                        // bin3 = &(*(bins->begin() + k));
 
                         three_item_swap(bin1, bin2, bin3, i, j, k, curt_sln);
                         
