@@ -553,17 +553,17 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
     // Test code here
     cout << "Initialize a possible answer: " << endl;
     cout << "Objectives: " << best_sln.objective << endl;
-    cout << "Known best: " << best_sln.known_best << endl << endl;
+    cout << "Known best: " << best_sln.prob->known_best << endl << endl;
 
 
-    while(time_spent < MAX_TIME) {
-        while(nb_indx < K) {
-            struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, )
-            if (neighb_s->objective < curt_sln->objective) {
-                copy_solution(curt_sln, neighb_s);
-            }
-        }
-    }
+    // while(time_spent < MAX_TIME) {
+    //     while(nb_indx < K) {
+    //         struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, )
+    //         if (neighb_s->objective < curt_sln->objective) {
+    //             copy_solution(curt_sln, neighb_s);
+    //         }
+    //     }
+    // }
 
     struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
 
