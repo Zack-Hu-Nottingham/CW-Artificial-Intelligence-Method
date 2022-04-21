@@ -649,6 +649,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
         }
 
         case 2: {
+            // 2-1 swap
             for (int i=0; i<bins->size(); i++) {
                 bin1 = &(*(bins->begin() + i));
                 if (bin1->cap_left == 0) continue;
