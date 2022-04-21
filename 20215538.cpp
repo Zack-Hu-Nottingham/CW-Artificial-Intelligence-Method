@@ -174,7 +174,6 @@ void output_solution(struct solution_struct* sln, char* out_file) {
     }
 
     fclose(pfile);
-
 }
 
 // 
@@ -322,7 +321,6 @@ void best_descent_3_swap(vector<bin_struct>* bins, struct solution_struct* curt_
                 bin3 = &(*(bins->begin() + k));
                 if (bin3->cap_left == 0) continue;
                 // 到此为止，获得到所有的bin
-
                 
                 for (int o=0; o<bin1->packed_items.size(); o++) {
                     for (int p=0; p<bin2->packed_items.size(); p++) {
@@ -350,6 +348,7 @@ void best_descent_3_swap(vector<bin_struct>* bins, struct solution_struct* curt_
                                         item2_best = &item2;
                                         item3_best = &item3;
                                         a = o, b = p, c = q, d = k;
+                                        best_delta = delta;
                                     }
                                 }
 
@@ -369,7 +368,7 @@ void best_descent_3_swap(vector<bin_struct>* bins, struct solution_struct* curt_
                                         item2_best = &item2;
                                         item3_best = &item3;
                                         a = o, b = p, c = q, d = k;
-
+                                        best_delta = delta;
                                     }
                                 }
                                                             
@@ -384,8 +383,8 @@ void best_descent_3_swap(vector<bin_struct>* bins, struct solution_struct* curt_
         }
     }
 
-    if (best_delta >= 0) {
-        
+    if (best_delta > 0) {
+        // cout << ""
         isImproving = true;
 
         if (bin2_best != bin3_best) {
@@ -419,7 +418,7 @@ void best_descent_3_swap(vector<bin_struct>* bins, struct solution_struct* curt_
             // 从bin1中删去item1
             bin1_best->packed_items.erase(bin1_best->packed_items.begin() + a);
             bin1_best->cap_left = bin1_best->cap_left + item1_best->size - item2_best->size - item3_best->size;
-            if (bin1_best->cap_left != 0) {
+            if (bin1_best->cap_left < 0) {
                 cout << "ERROR!!!!!!!!!" << endl;
             }
             
@@ -508,7 +507,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
 
     switch (nb_indx)
     {
-        case 1:
+        case 3:
             // search from back to front, bin1 is the bin with higher index
             for (int i=bins->size()-1; i>0; i-- ) { 
                 bin1 = &(*(bins->begin() + i));
@@ -520,7 +519,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
 
             
 
-        case 3:            
+        case 1:            
             // 1 - 1 - 1 swap
             // select three bins that are not full, and try all kinds of swap between bins
 
