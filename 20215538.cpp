@@ -44,6 +44,7 @@ int RAND_SEED[] = {1,20,30,40,50,60,70,80,90,100,110, 120, 130, 140, 150, 160, 1
 int NUM_OF_RUNS = 1;
 int MAX_TIME = 30;  //max amount of time permited (in sec)
 int num_of_problems;
+bool isImproving = false;
 
 
 int cmpfunc1(const void* a, const void* b){
@@ -384,6 +385,8 @@ void best_descent_3_swap(vector<bin_struct>* bins, struct solution_struct* curt_
     }
 
     if (best_delta >= 0) {
+        
+        isImproving = true;
 
         if (bin2_best != bin3_best) {
             bin1_best->cap_left = bin1_best->cap_left - item2_best->size - item3_best->size + item1_best->size;
@@ -689,10 +692,11 @@ struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
 
 // void varaible_neighbourhood_search(struct problem_struct* prob) {
 void varaible_neighbourhood_search(struct problem_struct* prob){
+
     clock_t time_start, time_fin;
     time_start = clock();
     double time_spent=0;
-    int nb_indx = 2; //neighbourhood index, start from 2, 0 or 1 is meaningless
+    int nb_indx = 0; //neighbourhood index, start from 2, 0 or 1 is meaningless
     
     best_sln.prob = prob;
     struct solution_struct* curt_sln = greedy_heuristic(prob);
@@ -701,68 +705,54 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
     // Test code here
     cout << "Initialize a possible answer: " << endl;
     cout << "Objectives: " << best_sln.objective << endl;
-    cout << "Known best: " << best_sln.prob->known_best << endl << endl;
-
-
-    while(time_spent < MAX_TIME) {
-        struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-        update_best_solution(neighb_s);
-
-
-    //     while(nb_indx < K) {
-    //         struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, )
-    //         if (neighb_s->objective < curt_sln->objective) {
-    //             copy_solution(curt_sln, neighb_s);
-    //         }
-    //     }
-    }
-
-    // struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-
-    // update_best_solution(neighb_s);
-    // // cout << "After three swap, objective=" << best_sln.objective << endl;
-    
-    // nb_indx = 0;
-    
-    // neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-
-    // update_best_solution(neighb_s);
-    // cout << "After one swap, objective=" << best_sln.objective << endl;
-    
-
-    cout << "After VNS " << endl;
-    cout << "Objectives: " << curt_sln->objective << endl;
     cout << "Known best: " << prob->known_best << endl << endl;
 
 
-    // int shaking_count =0;
-    // while(time_spent < MAX_TIME) //note that final computational time can be way beyond the MAX_TIME if best_descent is time consuming
-    // {
-    //     while(nb_indx<K){
-    //         struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln); //best solution in neighbourhood nb_indx
-    //         if(neighb_s->objective > curt_sln->objective){
-    //             copy_solution(curt_sln, neighb_s);
-    //             nb_indx=1;
-    //         }
-    //         else nb_indx++;
-    //         free_solution(neighb_s);free(neighb_s);
-    //     }
-    //     update_best_solution(curt_sln);
-    //     double gap=1000; //set to an arbitrarily large number if best known solution is not availabe.
-    //     if(best_sln.prob->best_obj!=0) gap=  100*(best_sln.prob->best_obj - best_sln.objective)/best_sln.prob->best_obj;
-    //     printf("shaking_count=%d, curt obj =%0.0f,\t best obj=%0.0f,\t gap= %0.2f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
-    //     vns_shaking(curt_sln, SHAKE_STRENGTH); //shaking at a given strength. This can be made adaptive
-    //     //vns_shaking(curt_sln, shaking_count/100+1); //re-active shaking
-    //     shaking_count++;
-    //     nb_indx=0;
+    int shaking_count =0;
+    while(time_spent < MAX_TIME) {
+
+        // while(nb_indx < K) {
+            // cout << "nb_indx=" << nb_indx << endl;
+            struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln);
+
+            if (isImproving) {
+                cout << "is improving" << endl;
+                copy_solution(curt_sln, neighb_s);
+                cout << curt_sln->objective << endl;
+                nb_indx=0;
+            }
+            else {
+                cout << "no improment, nb+1" << endl;
+                // nb_indx ++;
+                ////
+                break;
+                ////
+            }
+            isImproving = false;
+
+            // cout << endl;
+
+            if (curt_sln->objective == curt_sln->prob->known_best) {
+                break;
+            }
+            // delete(neighb_s);
+        // }
+        update_best_solution(curt_sln);
+
+        // update_best_solution(curt_sln);
+        // double gap = 1000;
+        // gap = (best_sln.prob->known_best - best_sln.objective) / best_sln.prob->known_best;
+        // vns_shaking(curt_sln, SHAKE_STRENGTH);
+        // shaking_count ++;
+        // nb_indx = 0;
         
-    //     time_fin=clock();
-    //     time_spent = (double)(time_fin-time_start)/CLOCKS_PER_SEC;
-    // }
+    //     break;
+
+        time_fin = clock();
+        time_spent = (double) (time_fin - time_start) /CLOCKS_PER_SEC;
+    }
 
 
-    // output_solution(&best_sln, "vns_results.txt");
-    // free_solution(curt_sln); 
     delete(curt_sln);
 
 }
