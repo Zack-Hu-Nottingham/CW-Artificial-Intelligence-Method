@@ -58,8 +58,8 @@ int cmpfunc1(const void* a, const void* b){
 int cmpfunc2(const void* a, const void* b){
     const struct item_struct* item1 = (const struct item_struct*) a;
     const struct item_struct* item2 = (const struct item_struct*) b;
-    if(item1->size>item2->size) return 1;
-    if(item1->size<item2->size) return -1;
+    if(item1->size>item2->size) return -1;
+    if(item1->size<item2->size) return 1;
     return 0;
 }
 
@@ -970,9 +970,10 @@ void apply_swap(int* curt_move, struct solution_struct* sln) {
 
 }
 
+
+
 //  best descent
 struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
-    int total_n = prob->n;
     int n = prob->n; // unpacked items number
     int cap = prob->capacities; // capacities of each bin
     
@@ -984,7 +985,7 @@ struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
     sln->prob = prob;
     // struct solution_struct* sol = initialize_empty_sol(prob); // initialize the solution
 
-    qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc2); // ascending
+    qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc2); // descending
 
     // initialize a bin
     bin_struct bin;
@@ -992,90 +993,90 @@ struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
 
     sln->bins.push_back(bin);
 
-    // for (int i=0; i<n; i++) {
-    //     int index = 0, target_index = -1; int left_cap = cap+1;
-    //     while(index <bin_num) {
-    //         if (sln->bins[index].cap_left >= prob->items[i].size && left_cap > sln->bins[index].cap_left) {
-    //             target_index = index;
-    //             left_cap = sln->bins[index].cap_left;
-    //         }
-    //         index ++;
-    //     }
-    //     if (target_index==-1) {
-    //         bin_struct new_bin;
-    //         new_bin.packed_items.push_back(prob->items[i]);
-    //         bin.cap_left = cap-prob->items[i].size;
-    //         sln->bins.push_back(new_bin);
-    //         bin_num ++;
-            
-    //     } else {
-    //         sln->bins[target_index].packed_items.push_back(prob->items[i]);
-    //         sln->bins[target_index].cap_left-=prob->items[i].size;
-    //     }
-    // }
-
-    // sln->objective = bin_num;
-
-    // return sln;
-
-    bool isFound = false;
-
-    // qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc1); // descending
-    qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc2); // ascending
-
-    // let it run infinitely until some conditions are reached
-    while(1) {
-
-        if (n == 0) {
-            // add the last bin
-            sol->bins.push_back(*bin);
-            delete(bin);
-            sol->objective += 1;
-
-            break; // if all items packed
-        }
-        
-        item_struct* choice = NULL; // record the best descent
-
-        for (int i=0; i<total_n; i++) {
-            // if the item is small enough to be added into the bin
-            if (!items[i].isPacked && bin->cap_left >= items[i].size) {
-                isFound = true; 
-
-                if (choice == NULL) { 
-                    choice = & items[i]; 
-                }
-
-                // compete with the current known best descent                
-                if (items[i].size > choice->size) {
-                    choice = & items[i];
-                }
+    for (int i=0; i<n; i++) {
+        int index = 0, target_index = -1; int left_cap = cap+1;
+        while(index <bin_num) {
+            if (sln->bins[index].cap_left >= prob->items[i].size && left_cap > sln->bins[index].cap_left) {
+                target_index = index;
+                left_cap = sln->bins[index].cap_left;
             }
+            index ++;
         }
-
-        if (isFound) {
+        if (target_index==-1) {
+            bin_struct new_bin;
+            new_bin.packed_items.push_back(prob->items[i]);
+            new_bin.cap_left = cap-prob->items[i].size;
+            sln->bins.push_back(new_bin);
+            bin_num ++;
             
-            bin->packed_items.push_back(*choice);
-            bin->cap_left -= choice->size;
-            choice->isPacked = true;
-            n--; // minus the total unpacked item number
-
-        } else { 
-            
-            // the current bin is too small to hold any item, push back the bin
-            sol->bins.push_back(*bin);
-            delete(bin);
-            sol->objective += 1;
-
-            // initialize a new empty bin
-            bin = new bin_struct();
-            bin->cap_left = cap;
+        } else {
+            sln->bins[target_index].packed_items.push_back(prob->items[i]);
+            sln->bins[target_index].cap_left-=prob->items[i].size;
         }
-    
-        isFound = false;
     }
 
-    return sol;
+    sln->objective = bin_num;
+
+    return sln;
+
+    // bool isFound = false;
+
+    // // qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc1); // descending
+    // qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc2); // ascending
+
+    // // let it run infinitely until some conditions are reached
+    // while(1) {
+
+    //     if (n == 0) {
+    //         // add the last bin
+    //         sol->bins.push_back(*bin);
+    //         delete(bin);
+    //         sol->objective += 1;
+
+    //         break; // if all items packed
+    //     }
+        
+    //     item_struct* choice = NULL; // record the best descent
+
+    //     for (int i=0; i<total_n; i++) {
+    //         // if the item is small enough to be added into the bin
+    //         if (!items[i].isPacked && bin->cap_left >= items[i].size) {
+    //             isFound = true; 
+
+    //             if (choice == NULL) { 
+    //                 choice = & items[i]; 
+    //             }
+
+    //             // compete with the current known best descent                
+    //             if (items[i].size > choice->size) {
+    //                 choice = & items[i];
+    //             }
+    //         }
+    //     }
+
+    //     if (isFound) {
+            
+    //         bin->packed_items.push_back(*choice);
+    //         bin->cap_left -= choice->size;
+    //         choice->isPacked = true;
+    //         n--; // minus the total unpacked item number
+
+    //     } else { 
+            
+    //         // the current bin is too small to hold any item, push back the bin
+    //         sol->bins.push_back(*bin);
+    //         delete(bin);
+    //         sol->objective += 1;
+
+    //         // initialize a new empty bin
+    //         bin = new bin_struct();
+    //         bin->cap_left = cap;
+    //     }
+    
+    //     isFound = false;
+    // }
+
+    // return sol;
 }
 
 void vns_shaking(struct solution_struct* sln, int strength)
@@ -1163,13 +1164,13 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
     //     double gap = 1000;
     //     gap = (double)(best_sln.objective - best_sln.prob->known_best)*100 / best_sln.prob->known_best;
 
-    //     // printf("shaking_count=%d, curt obj =%d, best obj=%d, gap= %0.1f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
+    //     printf("shaking_count=%d, curt obj =%d, best obj=%d, gap= %0.1f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
 
     //     copy_solution(curt_sln, &best_sln);
 
 
-    //     // vns_shaking(curt_sln, rand_int(1, SHAKE_STRENGTH));
-    //     // shaking_count ++;
+    //     vns_shaking(curt_sln, rand_int(1, SHAKE_STRENGTH));
+    //     shaking_count ++;
     //     nb_indx = 0;
         
         
@@ -1179,9 +1180,9 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
     //     time_spent = (double) (time_fin - time_start) /CLOCKS_PER_SEC;
     // }
 
-    // cout << "Initialize a possible answer: " << endl;
-    cout << "Objectives: " << best_sln.objective << endl;
-    cout << "Known best: " << prob->known_best << endl << endl;
+    // // cout << "Initialize a possible answer: " << endl;
+    // cout << "Objectives: " << best_sln.objective << endl;
+    // cout << "Known best: " << prob->known_best << endl << endl;
 
     // output_solution(&best_sln, "vns_results.txt");
     // free_solution(curt_sln); 
