@@ -706,6 +706,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
 
     switch (nb_indx)
     {
+        
         case 1: {
             // add item
             for (int i=0; i<bins->size(); i++ ) { 
@@ -1220,6 +1221,7 @@ struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
 
     // return sol;
 }
+
 void vns_shaking(struct solution_struct* sln, int strength)
 {
     //using random pair-wise swap, strength is the number of times we need to swap
@@ -1236,27 +1238,51 @@ void vns_shaking(struct solution_struct* sln, int strength)
             index2 = rand_int(0,sln->bins.size()-1);
             cnt++;
         }
+
+
         // pick items randomly
         int itemIndex1 = rand_int(0,sln->bins[index1].packed_items.size()-1);
         int itemIndex2 = rand_int(0,sln->bins[index2].packed_items.size()-1);
         if (sln->bins[index2].packed_items[itemIndex2].size-sln->bins[index1].packed_items[itemIndex1].size<=sln->bins[index1].cap_left
             && sln->bins[index1].packed_items[itemIndex1].size-sln->bins[index2].packed_items[itemIndex2].size<=sln->bins[index2].cap_left)
         {
+
+            // cout << "there" << endl;
+
             // copy target items
             item_struct copyItem1, copyItem2;
-            copyItem1.index = sln->bins[index1].packed_items[itemIndex1].index;
-            copyItem1.size = sln->bins[index1].packed_items[itemIndex1].size;
-            copyItem2.index = sln->bins[index2].packed_items[itemIndex2].index;
-            copyItem2.size = sln->bins[index2].packed_items[itemIndex2].size;
+            copyItem1 = sln->bins[index1].packed_items[itemIndex1];
+            copyItem2 = sln->bins[index2].packed_items[itemIndex2];
+            // copyItem1.index = sln->bins[index1].packed_items[itemIndex1].index;
+            // copyItem1.size = sln->bins[index1].packed_items[itemIndex1].size;
+            // copyItem2.index = sln->bins[index2].packed_items[itemIndex2].index;
+            // copyItem2.size = sln->bins[index2].packed_items[itemIndex2].size;
             // update capacities for bins
+
             sln->bins[index1].cap_left-=copyItem2.size-copyItem1.size;
             sln->bins[index2].cap_left+=copyItem2.size-copyItem1.size;
             // apply swap
-            sln->bins[index1].packed_items.erase(sln->bins[index1].packed_items.begin()+itemIndex1);
-            sln->bins[index2].packed_items.erase(sln->bins[index2].packed_items.begin()+itemIndex2);
+        // cout << "foo" << endl;
+            
+            // cout << sln->bins[index1].packed_items.size() <<endl;
+            // cout << sln->bins[index2].packed_items.size() <<endl;
+
+            // cout << itemIndex1 << endl;
+            // cout << itemIndex2 << endl;
+
+
             sln->bins[index1].packed_items.push_back(copyItem2);
             sln->bins[index2].packed_items.push_back(copyItem1);
+        // cout << "there" << endl;
+
+            sln->bins[index1].packed_items.erase(sln->bins[index1].packed_items.begin()+itemIndex1);
+        // cout << "here" << endl;
+
+            sln->bins[index2].packed_items.erase(sln->bins[index2].packed_items.begin()+itemIndex2);
+        // cout << "qua" << endl;
+
             m++;
+
         }
         cnt++;
     }
@@ -1347,7 +1373,7 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
         double gap = 1000;
         gap = (double)(best_sln.objective - best_sln.prob->known_best)*100 / best_sln.prob->known_best;
 
-        printf("shaking_count=%d, curt obj =%d, best obj=%d, gap= %0.1f%%\n",shaking_count, curt_sln->objective, best_sln.objective, gap);
+        printf("shaking_count=%d, curt obj =%d, best obj=%d, gap= %0.1f%%\n",shaking_count, curt_sln->objective, prob->known_best, gap);
 
         copy_solution(curt_sln, &best_sln);
 
@@ -1375,7 +1401,10 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
 
 
 int main(int argc, const char * argv[]) {
-    srand(6);
+    // srand(2);
+    srand(3);
+    // srand(6);
+
     printf("Starting the run...\n");
 
     char data_file[50]={"somefile"}, out_file[50]={}, solution_file[50]={};  //max 50 problem instances per run

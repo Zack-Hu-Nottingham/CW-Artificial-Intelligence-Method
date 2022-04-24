@@ -680,7 +680,7 @@ int varaible_neighbourhood_search(struct problem* prob){
     // apply best fit greedy heuristic
     struct solution* curt_sln = greedy_heuristic(prob);
     update_best_solution(curt_sln);
-    return 0;
+    // return 0;
     // start neighborhood searching
     int shaking_count = 0;
     bool isUpdated;
@@ -708,7 +708,7 @@ int varaible_neighbourhood_search(struct problem* prob){
 
         // diversification stage (shaking)
         copy_solution(curt_sln,&best_sln);
-        // vns_shaking(curt_sln, rand_int(1,SHAKE_MAX_STRENGTH)); //shaking at a random strength
+        vns_shaking(curt_sln, rand_int(1,SHAKE_MAX_STRENGTH)); //shaking at a random strength
         shaking_count++;
         nb_indx=0;
         
