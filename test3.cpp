@@ -674,8 +674,6 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
         }
 
         case 3: {
-            // int binIndex1, binIndex2, binIndex3;
-            // int itemIndex1, itemIndex2, itemIndex3;
 
             // traverse bins, let i denotes the index of the first bin
             for(int i=0; i<bins->size(); i++){
@@ -711,24 +709,16 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                                             
 
                                             // update best fitness value
-                                            best_delta = item2.size+item3.size-item1.size;
+                                            best_delta = item2.size + item3.size - item1.size;
                                             // update the data for the move that generate best fitness value
                                             best_move[0] = i;
                                             best_move[2] = j;
                                             best_move[4] = k;
-
                                             best_move[1] = a;
                                             best_move[3] = b;
                                             best_move[5] = c;
 
-                                            binIndex1 = i;
-                                            binIndex2 = j;
-                                            binIndex3 = k;
-                                            itemIndex1 = a;
-                                            itemIndex2 = b;
-                                            itemIndex3 = c;
                                         }
-                                            
                                     }
                                 }
                             }
@@ -740,7 +730,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             // update best neighbor to the neighbor which has the best fitness value so far
             if (best_delta>0)
             {   
-                // *isChanged = true; // denotes the best_neighb is different from the original solution
+                // denotes the best_neighb is different from the original solution
                 isImproving = true;
 
                 bin1 = &(*(bins->begin() + best_move[0]));
@@ -751,30 +741,20 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                 item2 = bin2->packed_items[best_move[3]];
                 item3 = bin3->packed_items[best_move[5]];
 
-                // copy the target items
-                // item_struct copyItem1,copyItem2,copyItem3;
-                // copyItem1.index = best_neighb->bins[binIndex1].packed_items[itemIndex1].index;
-                // copyItem1.size = best_neighb->bins[binIndex1].packed_items[itemIndex1].size;
-                // copyItem2.index = best_neighb->bins[binIndex2].packed_items[itemIndex2].index;
-                // copyItem2.size = best_neighb->bins[binIndex2].packed_items[itemIndex2].size;
-                // copyItem3.index = best_neighb->bins[binIndex3].packed_items[itemIndex3].index;
-                // copyItem3.size = best_neighb->bins[binIndex3].packed_items[itemIndex3].size;
-
-                
                 // update left capacities for bins
                 bin1->cap_left-=item2.size+item3.size-item1.size;
                 bin2->cap_left-=item1.size-item2.size;
                 bin3->cap_left+=item3.size;
+                
                 // swap items
-                bin1->packed_items.erase(bin1->packed_items.begin()+itemIndex1);
-                bin2->packed_items.erase(bin2->packed_items.begin()+itemIndex2);
+                bin1->packed_items.erase(bin1->packed_items.begin() + best_move[1]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[3]);
 
 
-                if (binIndex2 == binIndex3 && itemIndex2 < itemIndex3)
-                {
-                    bin3->packed_items.erase(bin3->packed_items.begin()+itemIndex3-1);
+                if (binIndex2 == binIndex3 && best_move[3] < best_move[5]) {
+                    bin3->packed_items.erase(bin3->packed_items.begin() + best_move[5]-1);
                 } else {
-                    bin3->packed_items.erase(bin3->packed_items.begin()+itemIndex3);
+                    bin3->packed_items.erase(bin3->packed_items.begin()+best_move[5]);
                 }
 
                 bin1->packed_items.push_back(item2);
@@ -785,13 +765,14 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
 
                 if (bin3->packed_items.size()==0)
                 {
-                    best_neighb->bins.erase(best_neighb->bins.begin()+binIndex3);
+                    best_neighb->bins.erase(best_neighb->bins.begin() + best_move[4]);
                     best_neighb->objective--;
                 }
             }
             break;
         }
             
+
         case 4: {
             for (int i = 0; i < bins->size(); i++)
             {
@@ -810,20 +791,34 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                             {
                                 for (int d = c+1; d < bin2->packed_items.size(); d++)
                                 {
+                                    // use these would lower the efficiency, but reader would be happy
+                                    item1 = bin1->packed_items[a];
+                                    item2 = bin1->packed_items[b];
+                                    item3 = bin2->packed_items[c];
+                                    item4 = bin2->packed_items[d];
+
                                     // calculate the fitness value of this new solution (neighbor)
-                                    int delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
+                                    delta = item3.size + item4.size - item1.size - item2.size;
                                     // check if the moves are feasible and whether we can have a better fitness value
-                                    if (delta>best_delta&&delta<=bin1->cap_left)
+                                    if (delta > best_delta && delta <= bin1->cap_left)
                                     {
                                         // update best fitness value
-                                        best_delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
+                                        best_delta = item3.size + item4.size - item1.size-item2.size;
                                         // update the data for the move that generate best fitness value
-                                        binIndex1 = i;
-                                        binIndex2 = j;
-                                        itemIndex1 = a;
-                                        itemIndex2 = b;
-                                        itemIndex3 = c;
-                                        itemIndex4 = d;
+                                        
+                                        best_move[0] = i;
+                                        best_move[2] = j;
+                                        best_move[1] = a;
+                                        best_move[3] = b;
+                                        best_move[5] = c;
+                                        best_move[7] = d;
+
+                                        // binIndex1 = i;
+                                        // binIndex2 = j;
+                                        // itemIndex1 = a;
+                                        // itemIndex2 = b;
+                                        // itemIndex3 = c;
+                                        // itemIndex4 = d;
                                     }
                                 }
                             }
@@ -835,28 +830,41 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             if (best_delta>0)
             {
                 isImproving = true; // denotes the best_neighb is different from the original solution
+                
+                bin1 = &(*(bins->begin() + best_move[0]));
+                bin2 = &(*(bins->begin() + best_move[2]));
+
+                item1 = bin1->packed_items[best_move[1]];
+                item2 = bin2->packed_items[best_move[3]];
+                item3 = bin3->packed_items[best_move[5]];
+                item4 = bin4->packed_items[best_move[7]];
+
                 // copy the target items
-                item_struct copyItem1,copyItem2,copyItem3,copyItem4;
-                copyItem1.index = best_neighb->bins[binIndex1].packed_items[itemIndex1].index;
-                copyItem1.size = best_neighb->bins[binIndex1].packed_items[itemIndex1].size;
-                copyItem2.index = best_neighb->bins[binIndex1].packed_items[itemIndex2].index;
-                copyItem2.size = best_neighb->bins[binIndex1].packed_items[itemIndex2].size;
-                copyItem3.index = best_neighb->bins[binIndex2].packed_items[itemIndex3].index;
-                copyItem3.size = best_neighb->bins[binIndex2].packed_items[itemIndex3].size;
-                copyItem4.index = best_neighb->bins[binIndex2].packed_items[itemIndex4].index;
-                copyItem4.size = best_neighb->bins[binIndex2].packed_items[itemIndex4].size;
+                // item_struct copyItem1,copyItem2,copyItem3,copyItem4;
+                // copyItem1.index = best_neighb->bins[binIndex1].packed_items[itemIndex1].index;
+                // copyItem1.size = best_neighb->bins[binIndex1].packed_items[itemIndex1].size;
+                // copyItem2.index = best_neighb->bins[binIndex1].packed_items[itemIndex2].index;
+                // copyItem2.size = best_neighb->bins[binIndex1].packed_items[itemIndex2].size;
+                // copyItem3.index = best_neighb->bins[binIndex2].packed_items[itemIndex3].index;
+                // copyItem3.size = best_neighb->bins[binIndex2].packed_items[itemIndex3].size;
+                // copyItem4.index = best_neighb->bins[binIndex2].packed_items[itemIndex4].index;
+                // copyItem4.size = best_neighb->bins[binIndex2].packed_items[itemIndex4].size;
+
                 // update left capacities for bins
-                best_neighb->bins[binIndex1].cap_left-=copyItem4.size+copyItem3.size-copyItem1.size-copyItem2.size;
-                best_neighb->bins[binIndex2].cap_left+=copyItem4.size+copyItem3.size-copyItem1.size-copyItem2.size;
+                bin1->cap_left -= item4.size+item3.size-item1.size-item2.size;
+                bin2->cap_left += item4.size+item3.size-item1.size-item2.size;
+
                 // swap items
-                best_neighb->bins[binIndex1].packed_items.erase(best_neighb->bins[binIndex1].packed_items.begin()+itemIndex2);
-                best_neighb->bins[binIndex1].packed_items.erase(best_neighb->bins[binIndex1].packed_items.begin()+itemIndex1);
-                best_neighb->bins[binIndex2].packed_items.erase(best_neighb->bins[binIndex2].packed_items.begin()+itemIndex4);
-                best_neighb->bins[binIndex2].packed_items.erase(best_neighb->bins[binIndex2].packed_items.begin()+itemIndex3);
-                best_neighb->bins[binIndex1].packed_items.push_back(copyItem3);
-                best_neighb->bins[binIndex1].packed_items.push_back(copyItem4);
-                best_neighb->bins[binIndex2].packed_items.push_back(copyItem1);
-                best_neighb->bins[binIndex2].packed_items.push_back(copyItem2);
+                bin1->packed_items.erase(bin1->packed_items.begin()+best_move[3]);
+                bin1->packed_items.erase(bin1->packed_items.begin()+best_move[1]);
+
+                bin2->packed_items.erase(bin2->packed_items.begin()+best_move[7]);
+                bin2->packed_items.erase(bin2->packed_items.begin()+best_move[5]);
+
+                bin1->packed_items.push_back(item3);
+                bin1->packed_items.push_back(item4);
+                bin2->packed_items.push_back(item1);
+                bin2->packed_items.push_back(item2);
             }
             break;
         }
