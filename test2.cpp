@@ -721,12 +721,12 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                                             best_move[3] = b;
                                             best_move[5] = c;
 
-                                            binIndex1 = i;
-                                            binIndex2 = j;
-                                            binIndex3 = k;
-                                            itemIndex1 = a;
-                                            itemIndex2 = b;
-                                            itemIndex3 = c;
+                                            // binIndex1 = i;
+                                            // binIndex2 = j;
+                                            // binIndex3 = k;
+                                            // itemIndex1 = a;
+                                            // itemIndex2 = b;
+                                            // itemIndex3 = c;
                                         }
                                             
                                     }
@@ -766,15 +766,15 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                 bin2->cap_left-=item1.size-item2.size;
                 bin3->cap_left+=item3.size;
                 // swap items
-                bin1->packed_items.erase(bin1->packed_items.begin()+itemIndex1);
-                bin2->packed_items.erase(bin2->packed_items.begin()+itemIndex2);
+                bin1->packed_items.erase(bin1->packed_items.begin() + best_move[1]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[3]);
 
 
-                if (binIndex2 == binIndex3 && itemIndex2 < itemIndex3)
+                if (best_move[2] == best_move[4] && best_move[3] < best_move[5])
                 {
-                    bin3->packed_items.erase(bin3->packed_items.begin()+itemIndex3-1);
+                    bin3->packed_items.erase(bin3->packed_items.begin()+best_move[5]-1);
                 } else {
-                    bin3->packed_items.erase(bin3->packed_items.begin()+itemIndex3);
+                    bin3->packed_items.erase(bin3->packed_items.begin()+best_move[5]);
                 }
 
                 bin1->packed_items.push_back(item2);
@@ -785,7 +785,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
 
                 if (bin3->packed_items.size()==0)
                 {
-                    best_neighb->bins.erase(best_neighb->bins.begin()+binIndex3);
+                    best_neighb->bins.erase(best_neighb->bins.begin()+best_move[4]);
                     best_neighb->objective--;
                 }
             }
