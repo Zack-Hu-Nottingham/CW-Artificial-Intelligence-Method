@@ -373,6 +373,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
     switch (nb_indx)
     {
         /*
+         * The main idea of case 1 is to move an item from one bin to another bin.
          * Case 1 try to find one items and two bins, which satisfy condition that the 
          * item1 from bin1 could be directly put into bin2. The fitness value is 
          * item1's size, which is also the changed capacity on bin2
@@ -380,16 +381,21 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
         case 1: {
             // travel through all the bins
             for (int i=0; i<bins->size(); i++ ) { 
-                // use 
+                // use a pointer to point to the current bin
                 bin1 = &(*(bins->begin() + i));
+                // if current bin is full
                 if (bin1->cap_left == 0) continue;
+
+                // travel through all the bins, start from bin1 + 1
                 for (int j=i+1; j<bins->size(); j++ ) { 
                     bin2 = &(*(bins->begin() + j));
                     if (bin2->cap_left == 0) continue;
 
+                    // record the two bins selected
                     curt_move[0] = i;
                     curt_move[2] = j;
 
+                    // use delta to record the 
                     delta = can_move(bins, &curt_move[0], nb_indx);
 
                     if (delta == -2) {
@@ -412,6 +418,14 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             }
             break;
         }
+
+        /*
+         * The main idea of case 2 is to swap two items in two bins.
+         * Case 2 try to find two items from two bins, which satisfy condition that the 
+         * item1 from bin1 could be replaced with item2 from bin2, in other words, swap two items. 
+         * The fitness value is item2's size minus item1's size, it is also the changed 
+         * capacity on bin1.
+        */
 
         case 2: {
             for (int i=0; i<bins->size(); i++ ) { 
@@ -447,8 +461,30 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             break;
         }
 
-        /* For case 3 and 4, I choose to not encapsulate the algorithm. Because I'm afraid that     encapsulation may reduce the execution efficiency, though encapsulation dose make codes more human friendly. */
+        /* 
+         * NOTES:
+         * For case 3 and 4, I do to not encapsulate the algorithm through methods can_move and 
+         * apply_move. That is because I'm afraid that encapsulation may reduce the execution 
+         * efficiency, though encapsulation dose make codes more human friendly.(Later I found 
+         * these reduction on performace could be ignored) 
+         * However, the method to choose bins/items to swap are alomost the same, whether use encapsulation
+         * or not.
+        */
 
+
+        /*
+         * Case 3 is actaully a conbination of 2-1 swap and 1-1-1 swap.
+         *
+         * 2-1 swap selects two bins and swap one item from bin1 with another item from bin2.
+         * Fitness value for 2-1 swap is item2's size plus item3's size minus item1's size, 
+         * i.e. the capacity change on bin1.
+         *
+         * 1-1-1 swap is a little bit more complex. It takes three bins, bin1, bin2, and bin3. 
+         * From bin1 it take out item1, from bin2 take out item2, and from bin3 take out item3. 
+         * Then put the item2 and item3 into bin1, and put the item2 into bin1. The fitness 
+         * value for 1-1-1 swap is the same with 2-1 swap, item2's size plus item3's size minus
+         * item1's size.
+        */
         case 3: {
             
             for(int i=0; i<bins->size(); i++){
@@ -459,6 +495,9 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                     bin2 = &(*(bins->begin() + j));
                     if (bin2->cap_left==0) { continue; }
                 
+                    // here is a trick, let k start with j
+                    // when k == j, it is actually searching for 2-1 swap
+                    // when k > j, it is searching for 1-1-1 swap
                     for (int k = j; k < bins->size(); k++) {
                         bin3 = &(*(bins->begin() + k));
 
@@ -473,14 +512,12 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                                     item2 = bin2->packed_items[b];
                                     item3 = bin3->packed_items[c];
 
-                                    // 
+                                    // make sure that these three items could swap, and its delta is greater than current best delta
                                     if (item1.size < item2.size + item3.size && item2.size + item3.size - item1.size <= bin1->cap_left && item2.size + item3.size-item1.size > best_delta){
                                         if (item1.size-item2.size <= bin2->cap_left
                                         || j==k && item1.size - item2.size - item3.size <= bin2->cap_left) {
-                                            
 
-                                            // update best fitness value
-                                            best_delta = item2.size+item3.size-item1.size;
+                                            // store the bins/items index in best_move
                                             best_move[0] = i;
                                             best_move[2] = j;
                                             best_move[4] = k;
@@ -489,8 +526,9 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                                             best_move[3] = b;
                                             best_move[5] = c;
 
+                                            // update best fitness value
+                                            best_delta = item2.size+item3.size-item1.size;
                                         }
-                                            
                                     }
                                 }
                             }
@@ -500,8 +538,8 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             }
 
             // update best neighbor to the neighbor which has the best fitness value so far
-            if (best_delta>0)
-            {   
+            if (best_delta > 0) {
+
                 isImproving = true;
 
                 bin1 = &(*(bins->begin() + best_move[0]));
@@ -512,14 +550,16 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                 item2 = bin2->packed_items[best_move[3]];
                 item3 = bin3->packed_items[best_move[5]];
                 
-                bin1->cap_left-=item2.size+item3.size-item1.size;
-                bin2->cap_left-=item1.size-item2.size;
-                bin3->cap_left+=item3.size;
+                // update bins capacity
+                // if is 2-1 swap, bin2 and bin3 denotes the same bin, it works as well
+                bin1->cap_left -= item2.size + item3.size - item1.size;
+                bin2->cap_left -= item1.size - item2.size;
+                bin3->cap_left += item3.size;
 
                 bin1->packed_items.erase(bin1->packed_items.begin() + best_move[1]);
                 bin2->packed_items.erase(bin2->packed_items.begin() + best_move[3]);
 
-
+                // when erasing item2 and item3 from in bin2, the order of items should be take into consideration
                 if (best_move[2] == best_move[4] && best_move[3] < best_move[5])
                 {
                     bin3->packed_items.erase(bin3->packed_items.begin()+best_move[5]-1);
@@ -527,11 +567,12 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                     bin3->packed_items.erase(bin3->packed_items.begin()+best_move[5]);
                 }
 
+                // put the items into bins
                 bin1->packed_items.push_back(item2);
                 bin1->packed_items.push_back(item3);
                 bin2->packed_items.push_back(item1);
                 
-
+                // if after swap bin3 contains no item, delete the bin
                 if (bin3->packed_items.size() == 0)
                 {
                     best_neighb->bins.erase(best_neighb->bins.begin() + best_move[4]);
@@ -540,8 +581,17 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             }
             break;
         }
+
+        /*
+         * The main idea of case 4 is 2-2 swap.
+         * Pick two bins, and take out two items from each bin.
+         * Check if two items from bin1 could swap with two items from bin2.
+         * The fitness value is item3.size + item4.size - item1.size - item2.size, 
+         * i.e. the capacity change on bin1.
+        */
             
         case 4: {
+            // pick two bins with free space
             for (int i = 0; i < bins->size(); i++) {
                 bin1 = &(*(bins->begin() + i));
                 if (bin1->cap_left==0 || bin1->packed_items.size() < 2) { continue; }
@@ -549,17 +599,17 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                     bin2 = &(*(bins->begin() + j));
                     if (bin2->packed_items.size() < 2) { continue; }
 
+                    // pick two items from each bin
                     for (int a = 0; a < bin1->packed_items.size(); a++) {
                         for (int b = a+1; b < bin1->packed_items.size(); b++) {
                             for (int c = 0; c < bin2->packed_items.size(); c++) {
                                 for (int d = c+1; d < bin2->packed_items.size(); d++) {
 
-                                    int delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
+                                    delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
 
-                                    if (delta>best_delta&&delta<=bin1->cap_left)
-                                    {
-                                        best_delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
-
+                                    if (delta > best_delta && delta <= bin1->cap_left) {
+                                        
+                                        // store the bins/items index in best_move
                                         best_move[0] = i;
                                         best_move[2] = j;
 
@@ -568,6 +618,8 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                                         best_move[5] = c;
                                         best_move[7] = d;
 
+                                        // update best delta
+                                        best_delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
                                     }
                                 }
                             }
@@ -575,8 +627,9 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                     }
                 }
             }
-            if (best_delta>0)
-            {
+
+            if (best_delta > 0) {
+
                 isImproving = true;
 
                 bin1 = &(*(bins->begin() + best_move[0]));
@@ -587,14 +640,17 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
                 item3 = bin2->packed_items[best_move[5]];
                 item4 = bin2->packed_items[best_move[7]];
 
+                // update bins capacity
                 bin1->cap_left-=item4.size+item3.size-item1.size-item2.size;
                 bin2->cap_left+=item4.size+item3.size-item1.size-item2.size;
 
+                // erase items
                 bin1->packed_items.erase(bin1->packed_items.begin()+best_move[3]);
                 bin1->packed_items.erase(bin1->packed_items.begin()+best_move[1]);
                 bin2->packed_items.erase(bin2->packed_items.begin()+best_move[7]);
                 bin2->packed_items.erase(bin2->packed_items.begin()+best_move[5]);
                 
+                // put items back to bins
                 bin1->packed_items.push_back(item3);
                 bin1->packed_items.push_back(item4);
                 bin2->packed_items.push_back(item1);
@@ -891,10 +947,12 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
             struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln);
 
             if (isImproving) {
+                // if have improvement, update current solution, and restart vns
                 copy_solution(curt_sln, neighb_s);
                 nb_indx=0;
             }
             else {
+                // if have no improvement, search next neighborhood
                 nb_indx ++;
             }
 
@@ -908,12 +966,11 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
         }
         update_best_solution(curt_sln);     // update best solution
         
-        // if the current objective already equal to best obejective, then stop
         if (isBestSolution) {
             break;
         }
 
-        /* diversification part */
+        /* Diversification part */
         double gap = 1000;
         gap = (double)(best_sln.objective - best_sln.prob->known_best)*100 / best_sln.prob->known_best;
 
@@ -921,7 +978,7 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
 
         copy_solution(curt_sln, &best_sln);
         vns_shaking(curt_sln, SHAKE_STRENGTH);  // start shaking
-        shaking_count ++;
+        shaking_count ++;                       // shaking count + 1
         nb_indx = 0;                            // restart vns from neighbor 1 
 
         /* 
