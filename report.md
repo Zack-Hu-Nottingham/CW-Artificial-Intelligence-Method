@@ -6,6 +6,8 @@ In this report, the following topics will be covered:
 
 [toc]
 
+​																																									Words count: 1989
+
 ## Algorithm explanation
 
 In this section, I will first introduce how I encoded the solution. And then, I would explain how I chose the fitness function. Finally, I will illustrate how I come up with these neighborhoods and how they perform. 
@@ -61,7 +63,7 @@ int best_move[] = {-1,-1, -1,-1, -1,-1, -1,-1};
 
 #### Fitness function
 
-When designing all these algorithms, my overall purpose is to **minimize the capacity left in the lower-indexed bins** and **maximize the capacity left in higher-indexed bins**. So under this circumstance, for most of the cases, I would use the capacity **change on the lower-indexed bin** to denote the fitness value.
+When designing all these algorithms, my overall purpose is to **minimize the capacity left in the lower-indexed bins** and **maximize the capacity left in higher-indexed bins**. So under this circumstance, for most cases, I would use the capacity **change on the lower-indexed bin** to denote the fitness value.
 
 Specific fitness functions would be mentioned in each neighborhood's introduction.
 
@@ -69,11 +71,11 @@ Specific fitness functions would be mentioned in each neighborhood's introductio
 
 #### Initial solution gathering
 
-For the sake of reducing time consumption, my initial idea is to use first-fit algorithms to get the initial solution. It works but the result did not seem to be good. For easy instances, the gap is around 2 bin2. So I was wondering how best-fit works, and how long it may take. I experimented on it, the results show that for both first-fit and the best-fit algorithms, it takes around 0.01 seconds to get the initial solution. And the best-fit algorithm's performance is a little bit better, the gap for easy instances is almost reduced to 1 bin. Though for medium and hard instances, the gap is still around 3 to 4 bins. 
+For the sake of reducing time consumption, my initial idea is to use first-fit algorithms to get the initial solution. It works, but the result does not seem to be good. For easy instances, the gap is around 2 bin2. So I wondered how best-fit works and how long it may take. I experimented on it, and the results show that it takes approximately 0.01 seconds to get the initial solution for both first-fit and the best-fit algorithms. And the best-fit algorithm's performance is a little bit better. The gap for easy instances is almost reduced to 1 bin. Though for medium and hard instances, the gap is still around 3 to 4 bins. 
 
-It is worth mentioning that, for both first-fit and best-fit, I sort the items in descending order first, according to their size. This unintentional act did bring me some hints later, on how to choose the neighborhood.
+It is worth mentioning that, before applying both first-fit and best-fit, I sort the items in descending order first, according to their size. This unintentional act did bring me some hints later on about choosing the neighborhood.
 
-The table below displays the performance of the initial solution. Obviously, the performance for hard and medium instances is poor, as for half of the instances reach the gap of 3 bins.
+The table below displays the performance of the initial solution. The performance for hard and medium instances is poor, as half of the instances reach the gap of 3 bins.
 
 | Performance (gap with best best-known objective) | 0 bin | 1 bin | 2 bin | 3 bin | 4 bin |
 | ------------------------------------------------ | ----- | ----- | ----- | ----- | ----- |
@@ -83,17 +85,15 @@ The table below displays the performance of the initial solution. Obviously, the
 
 
 
-#### Neighborhood choosing
+#### Neighborhood choosing (intensification part)
 
-In this subsection, I would introduce the neighborhood in the order of time that I come up with them, which is not the actual order in code. The final order is redesigned, and the order with the best performance is selected, which is noted in the bracket after each neighborhood. Moreover, 
-
-
+In this subsection, I would introduce the neighborhood in the order of time that I come up with them, which is not the actual order in code. The final order is redesigned, and the order with the best performance is selected, which is noted in the bracket after each neighborhood. Moreover, for all the neighborhood I applied best descent local search algorithm to achieve a better performance.
 
 ##### 1-1-1 swap (neighborhood 3)
 
-After I got the initial solution, my main focus is on optimizing medium and hard instances. I've checked what the initial solution looks like and I found something interesting. As the items are sorted before applying the best-fit algorithm, the dataset for the instances presents a similar pattern. That is, for the small indexed bin, it is always a huge item coupled with several tiny items. For medium and small indexed bins, it is most likely to have several medium-sized or small-sized items. According to this pattern, I came up with my first algorithm, 1-1-1 swap.
+After I got the initial solution, my main focus was optimizing medium and hard instances. I've checked what the initial solution looks like, and I found something interesting. As the items are sorted before applying the best-fit algorithm, the dataset for the instances presents a similar pattern. For the small indexed bin, it is always a huge item coupled with several tiny items. For medium and small indexed bins, it is most likely to have several medium-sized or small-sized items. I came up with my first algorithm, 1-1-1 swap, according to this pattern.
 
-The main purpose of 1-1-1 swap is to **minimize the capacity left in bin1 and bin2** and **maximize the capacity left in bin3**. To achieve this, it picks three bins, bin1, bin2, and bin3. Then, from each bin pick an item out, name them as item1 item2, item3. Assuming item1 is from bin1, item2 from bin2, and so on. Our goal is to **put item2 and item3 into bin1** and **put item1 into bin2**. After this kind of swap, bin3 lost an item, and the capacity left for both bin1 and bin2 is reduced. To better explain it, let me express the requirements for swap in a formal way:
+The primary purpose of 1-1-1 swap is to **minimize the capacity left in bin1 and bin2** and **maximize the capacity left in bin3**. To achieve this, it picks three bins, bin1, bin2, and bin3. Then, from each bin, pick an item out, and name them as item1, item2, item3. Assuming item1 is from bin1, item2 from bin2, and so on. Our goal is to **put item2 and item3 into bin1** and **put item1 into bin2**. After this kind of swap, bin3 lost an item, and the capacity left for both bin1 and bin2 is reduced. To better explain it, let me express the requirements for swap in a formal way:
 
 ```
 item2.size + item3.size <= item1.size + bin1.cap_left (make sure item2 and item3 could be packed into bin1)
@@ -113,7 +113,7 @@ delta = item2.size + item3.size - item1.size
 
 ##### 1-2 swap (neighborhood 3)
 
-When applying 1-1-1 swap, I figured out this algorithm could be further improved. There is an algorithm that is relatively similar to 1-1-1 swap, that is 1-2 swap. Surprisingly, 1-2 swap could be added to 1-1-1 swap with just a little bit of modification on the code. **So I combined these two algorithms into one neighborhood**. To implement 1-2 swap, we would firstly pick two bins, bin1 and bin2. From bin1 pick an item1, from bin2 pick two items, item2 and item3. Then swap item1 with item2 and item3. The requirements could be expressed as follows:
+When applying 1-1-1 swap, I figured out this algorithm could be further improved. There is an algorithm that is relatively similar to 1-1-1 swap, that is 1-2 swap. Surprisingly, 1-2 swap could be added to 1-1-1 swap with just a little bit of modification on the code. **So I combined these two algorithms into one neighborhood**. To implement 1-2 swap, we would firstly pick two bins, bin1 and bin2. From bin1, pick item1; from bin2, pick two items, item2 and item3. Then swap item1 with item2 and item3. The requirements could be expressed as follows:
 
 ```
 item2.size + item3.size <= item1.size + bin1.cap_left (make sure item2 and item3 could be packed into bin1)
@@ -131,8 +131,7 @@ delta = item2.size + item3.size - item1.size
 
 
 
-After applying these two algorithms, the results are displayed in the table below. The combination of these two algorithms has a significant effect on medium-level and hard-level instances.
-
+After applying these two algorithms, the results are displayed below. The combination of these two algorithms has a significant effect on medium-level and hard-level instances.
 (Number in the bracket denotes the performance before this operation.)
 
 | Performance (gap with best-known objective) | 0 bin | 1 bin  | 2 bin     | 3 bin  | 4 bin |
@@ -145,13 +144,11 @@ After applying these two algorithms, the results are displayed in the table belo
 
 ##### Shaking (diversification part)
 
-After reaching a not bad result through the first neighbor, instead of finding other useful neighborhoods, I first implemented shaking, e.g. the diversification part. Because though there do exist some other neighborhoods that could help improve the performance, they are too specific. In other words, they could only help with the specific cases, and I think I'm not yet going to dig that deep into one algorithm. I want to try something more general that could help with more cases.
+After reaching a not bad result through the first neighbor, I first implemented shaking instead of finding other useful neighborhoods, e.g., the diversification part. Because though there do exist some other neighborhoods that could help improve the performance, they are too specific. In other words, they could only help with the particular cases, and I think I'm not yet going to dig that deep into one algorithm. I want to try something more general that could help with more cases.
 
-The algorithm for shaking is quite straightforward. Randomly pick two bins and from each bin pick an item. If two items could swap, then swap, else pick another pair of items. Shaking would happen only if all the neighborhoods could not generate a better solution. And **applying shaking would help the algorithm to get out of the local optimum**.  
+The algorithm for shaking is quite straightforward. Randomly pick two bins and from each bin, pick an item. If two items could swap, then swap, else pick another pair of items. Shaking would happen if all the neighborhoods could not generate a better solution. And **applying shaking would help the algorithm to get out of the local optimum**. 
 
-
-
-Below is the table for shaking's performance, it has a significant improvement on easy, medium, and hard instances. After shaking, the gap for most of the instances dropped to 1 bin.
+Below is the table for shaking's performance. It has a significant improvement in easy, medium, and hard instances. After shaking, the gap for most of the instances dropped to 1 bin.
 
 | Performance (gap with best-known objective) | 0 bin       | 1 bin      | 2 bin     | 3 bin  | 4 bin |
 | ------------------------------------------- | ----------- | ---------- | --------- | ------ | ----- |
@@ -163,7 +160,7 @@ Below is the table for shaking's performance, it has a significant improvement o
 
 ##### One item transfer (neighborhood 1)
 
-I haven't expected that shaking would bring me such a huge improvement in the performance. After implementing shaking, I observed the results. I figured out that for higher indexed bins, there may occur the case that, several bins only have one item and these items could be packed into one bin. Therefore, I implemented one item transfer. The algorithm is relatively easy, it picks two bins, take an item from the second bin, and put it into the first bin.
+I hadn't expected that shaking would bring me such a massive improvement in the performance. After implementing shaking, I observed the results. I figured out that for higher indexed bins, there may occur the case that several bins only have one item, and these items could be packed into one bin. Therefore, I implemented one item transfer. The algorithm is relatively easy. It picks two bins, takes an item from the second bin, and puts it into the first bin.
 
 In this case, the fitness value could be denoted as item2's size:
 
@@ -177,7 +174,7 @@ delta = item2.size
 
 Another algorithm that I thought might be helpful is 1-1 swap. Just like its name refers, it directly swaps two items.
 
-1-1 swap uses the same algorithm with shaking, but the bins and items are not randomly picked. 1-1 swap would only happen when the two items could swap and item2's size is bigger than the item1's size.
+1-1 swap uses the same algorithm with shaking, but the bins and items are not randomly picked. 1-1 swap would only happen when the two items could swap, and item2's size is bigger than item1's size.
 
 In this case, the fitness value could be denoted as the capacity change on bin1:
 
@@ -189,15 +186,13 @@ delta = item2.size - item1.size
 
 ##### 2-2 swap (neighborhood 4) & 1-3 swap & 2-3 swap
 
-After designing and implementing the first three algorithms, I found that there does not exist an obvious way to improve the current situation. So I tried on some variants of 1-1 swap: 2-2 swap, 1-3 swap, and 2-3 swap. Unfortunately, they did not have a significant improvement on the current solution. 
+After designing and implementing the first three algorithms, I found that there is no obvious way to improve the current situation. So I tried on some variants of 1-1 swap: 2-2 swap, 1-3 swap, and 2-3 swap. Unfortunately, they did not have a significant improvement on the current solution. 
 
-Implementing any of these algorithms could only make difference on easy instances, e.g. making the easy instances all 0. I think the reason behind this is that they are all variants of 1-1 swap. They could be replaced by 1-1 swap. 
+Implementing any of these algorithms could only make a difference on easy instances, e.g., making the easy instances all 0. I think the reason behind this is that they are all variants of 1-1 swap. They could be replaced by 1-1 swap. 
 
-Finally I choose 2-2 swap as the fourth neighborhood. Though in the code you may find there exist neighborhood 5 and 6, but I did not choose to make use of them, .i.e. these part of codes would be escaped.
+Finally, I chose 2-2 swap as the fourth neighborhood. Though in the code you may find there exist neighborhoods 5 and 6, I did not choose to make use of them, i.e., these parts of codes would be escaped.
 
-
-
-Below is the overall performance after adding one item transfer algorithm (neighborhood 1), 1-1 swap algorithm (neighborhood 2) and 2-2 swap (neighborhood 4). It could be seen that the combination of these three algorithms is quite efficient and performs well.
+Below is the overall performance after adding one item transfer algorithm (neighborhood 1), 1-1 swap algorithm (neighborhood 2), and 2-2 swap (neighborhood 4). It could be seen that the combination of these three algorithms is quite efficient and performs well.
 
 | Performance (gap with best-known objective) | 0 bin       | 1 bin      | 2 bin | 3 bin | 4 bin |
 | ------------------------------------------- | ----------- | ---------- | ----- | ----- | ----- |
@@ -211,7 +206,7 @@ Below is the overall performance after adding one item transfer algorithm (neigh
 
 ## Performance evaluation
 
-Below are the results of five runs with random seeds 3, 10, 20, 30, and 100. The best result means in a total of five runs, the minimum gap of the specific instance. The worst result means in a total of five runs, the maximum gap of the specific instance. For example, the gap for instance u500_03 are 1, 0, 0, 0, 1 in five runs. So the best result is 0, the worst is 1, and the average is 0.4 ((1+1) / 5).
+Below are the results of five runs with random seeds 3, 10, 20, 30, and 100. In a total of five runs, the best result means the minimum gap of the specific instance, and the worst result means the maximum gap of the specific instance. For example, the gap for instance u500_03 are 1, 0, 0, 0, 1 in five runs. Here, the best result is 0, the worst is 1, and the average is 0.4 ((1+1) / 5).
 
 ##### Best result
 
@@ -307,10 +302,12 @@ Below are the results of five runs with random seeds 3, 10, 20, 30, and 100. The
 
 ## Reflections
 
-From the table above, we can see that two medium instances u500_06 and u500_07 can definitely not be optimized to 0 bin for my algorithms. There's a chance that u500_03, u500_12, and u500_19 can not be optimized to 0 bin. However, the chance is low. Frankly speaking, I'm pretty satisfied with the performance. 
+From the table above, we can see that two medium instances, u500_06 and u500_07, can not be optimized to 0 bin for my algorithms. There's a chance that u500_03, u500_12, and u500_19 can not be optimized to 0 bin. However, the chance is low. Frankly speaking, I'm pretty satisfied with the performance. 
 
-The performance could be further improved with the new distinct neighborhoods. Here, distinctiveness is of vital importance. As I mentioned in 2-2 swap, the variant of 1-1 swap (like 2-3 swap, 1-3 swap) does not perform well. That is because they could be replaced with 1-1 swap and shaking, e.g., they are not irreplaceable. However, the time consumption would be much higher with the extra neighborhood, which means the code may need further refactoring for high efficiency.
+However, the performance could be further improved with the new distinct neighborhoods. Here, distinctiveness is of vital importance. As I mentioned in 2-2 swap, the variant of 1-1 swap (like 2-3 swap, 1-3 swap) does not perform well. That is because they could be replaced with 1-1 swap and shaking, e.g., they are not irreplaceable. However, the time consumption would be much higher with the extra neighborhood, which means the code may need further refactoring for higher efficiency.
 
 To summarize, it is a magical and meaningful journey for me to come up with, explore, and verify all these algorithms. In the beginning, I had no idea how to develop the algorithm, though I knew the framework of VNS. After observing the dataset, together with the experience from daily life, I made some guesses and assumptions. Then I write codes to implement these assumptions. When the performance/result does not match expectations, I will verify it carefully, step by step. Trying to give it a reason why it fails, to see if something goes wrong with my code or just my assumptions are not reasonable. 
 
-Overall , the journey of raising an assumption, implementing it, and finally verifying it is satisfying. 
+Overall, the journey of raising an assumption, implementing it, and finally verifying it is satisfying. 
+
+Thanks for your reading!
