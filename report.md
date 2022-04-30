@@ -211,9 +211,9 @@ Below is the overall performance after adding one item transfer algorithm (neigh
 
 ## Performance evaluation
 
-Below are the results of five runs with random seeds 3, 10, 20, 30, and 100.
+Below are the results of five runs with random seeds 3, 10, 20, 30, and 100. The best result means in a total of five runs, the minimum gap of the specific instance. The worst result means in a total of five runs, the maximum gap of the specific instance. For example, the gap for instance u500_03 are 1, 0, 0, 0, 1 in five runs. So the best result is 0, the worst is 1, and the average is 0.4 ((1+1) / 5).
 
-##### Best
+##### Best result
 
 | DataSet | Objective | Best know | Gap  | DataSet | Objective | Best know | Gap  |
 | ------- | --------- | --------- | ---- | ------- | --------- | --------- | ---- |
@@ -243,7 +243,7 @@ Below are the results of five runs with random seeds 3, 10, 20, 30, and 100.
 | u500_03 | 204       | 204       | 0    | HARD8   | 57        | 57        | 0    |
 | u500_04 | 206       | 206       | 0    | HARD9   | 56        | 56        | 0    |
 
-##### Worst
+##### Worst result
 
 | DataSet | Objective | Best know | Gap  | DataSet | Objective | Best know | Gap  |
 | ------- | --------- | --------- | ---- | ------- | --------- | --------- | ---- |
@@ -273,7 +273,7 @@ Below are the results of five runs with random seeds 3, 10, 20, 30, and 100.
 | u500_03 | 205       | 204       | 1    | HARD8   | 57        | 57        | 0    |
 | u500_04 | 206       | 206       | 0    | HARD9   | 56        | 56        | 0    |
 
-##### Average
+##### Average result
 
 | DataSet | Objective | Best know | Gap  | DataSet | Objective | Best know | Gap  |
 | ------- | --------- | --------- | ---- | ------- | --------- | --------- | ---- |
@@ -306,3 +306,11 @@ Below are the results of five runs with random seeds 3, 10, 20, 30, and 100.
 
 
 ## Reflections
+
+From the table above, we can see that two medium instances u500_06 and u500_07 can definitely not be optimized to 0 bin for my algorithms. There's a chance that u500_03, u500_12, and u500_19 can not be optimized to 0 bin. However, the chance is low. Frankly speaking, I'm pretty satisfied with the performance. 
+
+The performance could be further improved with the new distinct neighborhoods. Here, distinctiveness is of vital importance. As I mentioned in 2-2 swap, the variant of 1-1 swap (like 2-3 swap, 1-3 swap) does not perform well. That is because they could be replaced with 1-1 swap and shaking, e.g., they are not irreplaceable. However, the time consumption would be much higher with the extra neighborhood, which means the code may need further refactoring for high efficiency.
+
+To summarize, it is a magical and meaningful journey for me to come up with, explore, and verify all these algorithms. In the beginning, I had no idea how to develop the algorithm, though I knew the framework of VNS. After observing the dataset, together with the experience from daily life, I made some guesses and assumptions. Then I write codes to implement these assumptions. When the performance/result does not match expectations, I will verify it carefully, step by step. Trying to give it a reason why it fails, to see if something goes wrong with my code or just my assumptions are not reasonable. 
+
+Overall , the journey of raising an assumption, implementing it, and finally verifying it is satisfying. 
