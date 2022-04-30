@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-
 #include <algorithm>
 #include <math.h>
 #include <stdlib.h>
@@ -10,44 +9,51 @@
 
 using namespace std;
 
+// struct of the item
 struct item_struct{
-    int size;
-    int index;
-    bool isPacked;
+    int size;   // size of the item
+    int index;  // index of the item
 };
 
+// struct of the bin
 struct bin_struct {
-    vector<item_struct> packed_items;
-    int cap_left;
+    vector<item_struct> packed_items;   // vector of the items it contains
+    int cap_left;                       // the capacity left
 };
 
+// struct of the problem
 struct problem_struct{
-    char name[10];
-    int n; //number of items
-    int capacities;  //knapsack capacities
-    int known_best;
-    struct item_struct* items;
+    char name[10];              // name of the problem
+    int n;                      // number of items
+    int capacities;             // capacitie of each bin
+    int known_best;             // the best objective of this problem
+    struct item_struct* items;  // a pointer to an array of items
 };
 
+// struct of the solution
 struct solution_struct {
-    struct problem_struct* prob;
-    int objective; // float objective;
-    int feasibility;
+    struct problem_struct* prob;    // a pointer to the problem that it is going to solve
+    int objective;                  // current solution's objective
     vector<bin_struct> bins;
 };
 
-/* declare parameters for variable neighbourhood search here*/
-int K= 4; // k-opt is used
-int SHAKE_STRENGTH = 12;
-struct solution_struct best_sln;  //global best solution
-int RAND_SEED[] = {1,20,30,40,50,60,70,80,90,100,110, 120, 130, 140, 150, 160, 170, 180, 190, 200};
-int NUM_OF_RUNS = 1;
-int MAX_TIME = 30;  //max amount of time permited (in sec)
-int num_of_problems;
-bool isImproving;
+// global variables 
+int K = 2;                       // k is used to denote how many neighborhoods would be used
+int SHAKE_STRENGTH = 12;         // the strength of shaking
+struct solution_struct best_sln; // global best solution
+int NUM_OF_RUNS = 1;             // number of runs
+int MAX_TIME = 30;               // max amount of time permited (in sec)
+int num_of_problems;             // number of problems
 
+/*
+ * This is a global boolean that is used to tell if the the current neighborhood's local search 
+ * have improvement. Because though it is improving, the objective would probably not drop. So
+ * can not express whether it is an improvement just through changes on objective.
+*/
+bool isImproving;                
 
-int cmpfunc1(const void* a, const void* b){
+// Sort the items in descending order.
+int cmpfunc(const void* a, const void* b){
     const struct item_struct* item1 = (const struct item_struct*) a;
     const struct item_struct* item2 = (const struct item_struct*) b;
     if(item1->size>item2->size) return -1;
@@ -55,15 +61,7 @@ int cmpfunc1(const void* a, const void* b){
     return 0;
 }
 
-int cmpfunc2(const void* a, const void* b){
-    const struct item_struct* item1 = (const struct item_struct*) a;
-    const struct item_struct* item2 = (const struct item_struct*) b;
-    if(item1->size>item2->size) return 1;
-    if(item1->size<item2->size) return -1;
-    return 0;
-}
-
-//return a random nunber ranging from min to max (inclusive)
+// Return a random nunber ranging from min to max (inclusive).
 int rand_int(int min, int max)
 {
     int div = max-min+1;
@@ -72,6 +70,7 @@ int rand_int(int min, int max)
     return val;
 }
 
+// According to the given parameter, initialize and return a new problem.
 void init_problem(char* name, int n, int capacities, int known_best, struct problem_struct** my_prob)
 {
     struct problem_struct* new_prob = (struct problem_struct*) malloc(sizeof(struct problem_struct));
@@ -79,16 +78,14 @@ void init_problem(char* name, int n, int capacities, int known_best, struct prob
 
     new_prob->n=n; new_prob->capacities=capacities; new_prob->known_best=known_best;
     new_prob->items= (struct item_struct*) malloc(sizeof(struct item_struct)*n);
-    // for(int j=0; j<n; j++)
-        // new_prob->items[j].index = j;
     *my_prob = new_prob;
 }
 
+// Free the problem and its space.
 void free_problem(struct problem_struct* prob)
 {
     if(prob!=NULL)
     {
-        // if(prob->capacities !=NULL) free(prob->capacities);
         if(prob->items!=NULL)
         {
             free(prob->items);
@@ -97,9 +94,7 @@ void free_problem(struct problem_struct* prob)
     }
 }
 
-//copy可能存在很多问题
-
-//copy a solution from another solution
+// Copy a solution from another solution.
 bool copy_solution(struct solution_struct* dest_sln, struct solution_struct* source_sln)
 {
     if(source_sln ==NULL) return false;
@@ -108,20 +103,20 @@ bool copy_solution(struct solution_struct* dest_sln, struct solution_struct* sou
         dest_sln = (struct solution_struct*) malloc(sizeof(struct solution_struct));
     }
     dest_sln->prob = source_sln->prob;
-    dest_sln->feasibility = source_sln->feasibility;
     dest_sln->objective = source_sln->objective;
     dest_sln->bins = source_sln->bins;
     return true;
 }
 
-//update global best solution from sln
+// Update global best solution according to current solution.
 void update_best_solution(struct solution_struct* sln)
 {
-    if(best_sln.objective >= sln->objective) { //这边特意放宽条件
+    if(best_sln.objective >= sln->objective) { 
         copy_solution(&best_sln, sln);
     }
 }
 
+// Load problem from data file.
 struct problem_struct** load_problems(char* data_file)
 {
     int i,j,k;
@@ -133,9 +128,6 @@ struct problem_struct** load_problems(char* data_file)
     }
 
     fscanf (pfile, "%d", &num_of_problems);
-
-    // For test purpose
-    printf("Number of problem: %d\n", num_of_problems);
     
     struct problem_struct** my_problems = (struct problem_struct**) malloc(sizeof(struct problem_struct*)*num_of_problems);
 
@@ -149,16 +141,13 @@ struct problem_struct** load_problems(char* data_file)
         fscanf (pfile, "%d", &capacities);
         fscanf (pfile, "%d", &n); 
         fscanf (pfile, "%d", &known_best);
-        // printf("Name: %s, capacities: %d, item number: %d, known_best: %d\n", name, capacities, n, known_best);
 
         // Initialize problem
         init_problem(name, n, capacities, known_best, &my_problems[k]);  //allocate data memory
         for(j=0; j<n; j++)
         {
             my_problems[k]->items[j].index=j;
-            my_problems[k]->items[j].isPacked = false;
             fscanf(pfile, "%d", &(my_problems[k]->items[j].size)); //read profit data
-            // printf("item[%d].p=%d\n", j, my_problems[k]->items[j].size);
         }
     }
     fclose(pfile); //close file
@@ -166,9 +155,9 @@ struct problem_struct** load_problems(char* data_file)
     return my_problems;
 }
 
-
-//output a given solution to a file
+// Output a given solution to a file.
 void output_solution(struct solution_struct* sln, char* out_file) {
+    cout << "output solution" << endl;
     FILE* pfile = fopen(out_file, "a"); //open a new file
 
     fprintf(pfile, "%s\n", sln->prob->name); 
@@ -177,126 +166,21 @@ void output_solution(struct solution_struct* sln, char* out_file) {
         // fprintf(pfile, "bin %d: ", i);
         for (int j=0; j<sln->bins[i].packed_items.size(); j++) {
             fprintf(pfile, "%d ", sln->bins[i].packed_items[j].index); 
+            // fprintf(pfile, "%d: %d  ", sln->bins[i].packed_items[j].index, sln->bins[i].packed_items[j].size); 
         }
         // fprintf(pfile, "%d", sln->bins[i].cap_left);
-        fprintf(pfile, "\n");  // 如果跟据bin的数量来判断会多出空行，因为有空bin没被删去
+        fprintf(pfile, "\n");  
     }
 
     fclose(pfile);
 
 }
 
-// 
-void three_item_swap(bin_struct* bin1, bin_struct* bin2, bin_struct* bin3, int a, int b, int c,  struct solution_struct* sln) {
-
-    int cap1, cap2, cap3;
-    int cap1_after, cap2_after, cap3_after;
-
-    item_struct item1, item2, item3;
-
-    for (int i=0; i<bin1->packed_items.size(); i++) {
-        for (int j=0; j<bin2->packed_items.size(); j++) {
-            for (int k=0; k<bin3->packed_items.size(); k++) {
-                item1 = bin1->packed_items[i];
-                item2 = bin2->packed_items[j];
-                item3 = bin3->packed_items[k];
-                
-                cap1 = bin1->cap_left;
-                cap2 = bin2->cap_left;
-                cap3 = bin3->cap_left;
-
-                int cap_left1 = bin1->cap_left;
-                int cap_left2 = bin2->cap_left;
-
-                // tell if could swap
-                if (item2.size + item3.size <= cap_left1 + item1.size && item2.size + item3.size > item1.size) {
-                    if (item1.size <= cap_left2 + item2.size) {                        
-                        
-                        bin1->cap_left = bin1->cap_left - item2.size - item3.size + item1.size;
-                        bin2->cap_left = bin2->cap_left - item1.size + item2.size;
-                        bin3->cap_left = bin3->cap_left + item3.size;
-
-                        // all satisfied, then swap
-                        bin1->packed_items.erase(bin1->packed_items.begin() + i);
-                        bin2->packed_items.erase(bin2->packed_items.begin() + j);
-                        bin3->packed_items.erase(bin3->packed_items.begin() + k);
-
-                        bin1->packed_items.push_back(item2); // add item2 to bin1
-                        bin1->packed_items.push_back(item3); // add item3 to bin1
-                        bin2->packed_items.push_back(item1); // add item1 to bin2
-
-
-                        cap1_after = bin1->cap_left;
-                        cap2_after = bin2->cap_left;
-                        cap3_after = bin3->cap_left;
-
-                        if (bin3->packed_items.size() == 0) {
-                            cout << "objective -1 " << endl;
-                            sln->bins.erase(sln->bins.begin() + c);
-                            sln->objective -= 1;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return ;
-}
-
-// This 
-void one_swap(bin_struct* bin1, bin_struct* bin2, int index, struct solution_struct* sln) {
-    item_struct item;
-    for (int i=0; i<bin1->packed_items.size(); i++) {
-        item = bin1->packed_items[i];
-        if (item.size <= bin2->cap_left) {
-            // 把这个item放到bin2里
-            bin1->packed_items.erase(bin1->packed_items.begin() + i);
-            bin2->packed_items.push_back(item);
-            bin1->cap_left += item.size;
-            bin2->cap_left -= item.size;
-            // 判断bin1是否为空，若空则删去这个bin并且obejctive - 1
-            if (bin1->packed_items.size() == 0) {
-                sln->bins.erase(sln->bins.begin() + index);
-                sln->objective -= 1;
-                cout << "Objective -1" << endl;
-            }
-        }
-    }
-}
-
-void two_one_swap(bin_struct* bin1, bin_struct* bin2, struct solution_struct* sln) {
-    bool isFound = false;
-    item_struct item1, item2, item3;
-
-    for (int i=0; i<bin1->packed_items.size(); i++) {
-        item1 = bin1->packed_items[i];
-        for (int j=0; j<bin2->packed_items.size(); j++) {
-            item2 = bin2->packed_items[j];
-            for (int k=j+1; k<bin2->packed_items.size(); k++) {
-                item3 = bin2->packed_items[k];
-                if (item2.size + item3.size == item1.size + bin1->cap_left) {
-
-                    // 从bin1中删去item1
-                    bin1->packed_items.erase(bin1->packed_items.begin() + i);
-                    bin1->packed_items.push_back(item2);
-                    bin1->packed_items.push_back(item3);
-                    bin1->cap_left = bin1->cap_left + item1.size - item2.size - item3.size;
-                    if (bin1->cap_left != 0) {
-                        cout << "ERROR!!!!!!!!!" << endl;
-                    }
-                    
-                    // delete item2 and item3 from bin2
-                    bin2->packed_items.erase(bin2->packed_items.begin() + j);
-                    bin2->packed_items.erase(bin2->packed_items.begin() + k-1);
-                    bin2->packed_items.push_back(item1);
-                    bin2->cap_left = bin2->cap_left + item2.size + item3.size - item1.size;
-                    return ;
-                }
-            }
-        }
-    }
-}
-
+/*
+ * This method tell whether in the provided bins, there have items allows 
+ * specified swap. If there exists, store the item index in curt_move
+ * and return the fitness value (how suitable is this swap).
+*/ 
 int can_move(vector<bin_struct> *bins, int* curt_move, int nb_indx) {
 
     bin_struct* bin1;
@@ -306,87 +190,89 @@ int can_move(vector<bin_struct> *bins, int* curt_move, int nb_indx) {
     int bin1_idx, bin2_idx, bin3_idx;
     item_struct item1, item2, item3;
 
-    int delta;
-    // int cap1, cap2, cap3;
-    // int cap1_after, cap2_after, cap3_after;
-
+    int delta = 0, best_delta = 0;
 
     switch(nb_indx) {
+        
         case 1: {
-
+            // cheeck if any item could be packed into another bin
             bin1_idx = curt_move[0];
             bin2_idx = curt_move[2];
-            bin3_idx = curt_move[4];
 
             bin1 = &(*(bins->begin() + bin1_idx));
             bin2 = &(*(bins->begin() + bin2_idx));
-            bin3 = &(*(bins->begin() + bin3_idx));
 
-            int cap_left1 = bin1->cap_left;
-            int cap_left2 = bin2->cap_left;
+            for (int j=0; j<bin2->packed_items.size(); j++) {
+
+                item2 = bin2->packed_items[j];
+                
+                if (bin1->cap_left >= item2.size) {
+                    if (bin1->cap_left == item2.size) {
+                        curt_move[3] = j;
+                        return -2;
+                    }
+                    
+                    delta = item2.size;
+
+                    if (delta > best_delta) {
+                        curt_move[3] = j;
+                        best_delta = delta;
+                    }
+                }
+            }
+            return best_delta;
+        }
+        
+        case 2: {
+            // transfer one item from one bin to another
+            bin1_idx = curt_move[0];
+            bin2_idx = curt_move[2];
+
+            bin1 = &(*(bins->begin() + bin1_idx));
+            bin2 = &(*(bins->begin() + bin2_idx));
 
             for (int i=0; i<bin1->packed_items.size(); i++) {
                 for (int j=0; j<bin2->packed_items.size(); j++) {
-                    for (int k=0; k<bin3->packed_items.size(); k++) {
-                        item1 = bin1->packed_items[i];
-                        item2 = bin2->packed_items[j];
-                        item3 = bin3->packed_items[k];
-                        
-                        // tell if could swap
-                        if (item2.size + item3.size <= cap_left1 + item1.size && item2.size + item3.size > item1.size && item1.size <= cap_left2 + item2.size) { 
-                                curt_move[1] = i;
-                                curt_move[3] = j;
-                                curt_move[5] = k;
 
-                            delta = item2.size + item3.size - item1.size;
-                            if (item2.size + item3.size == cap_left1 + item1.size) {
-                                return 1000;
-                            }
-                            return delta;
+                    item1 = bin1->packed_items[i];
+                    item2 = bin2->packed_items[j];
+                    
+                    if (bin1->cap_left >= item2.size - item1.size ) {
+                        if (bin1->cap_left == item2.size - item1.size) {
+                            curt_move[1] = i;
+                            curt_move[3] = j;
+                            return -2;
+                        }
+                        
+                        delta = item2.size - item1.size;
+
+                        if (delta > best_delta) {
+                            curt_move[1] = i;
+                            curt_move[3] = j;
+                            best_delta = delta;
                         }
                     }
                 }
             }
-            
-            return -1;
+            return best_delta;
         }
 
-        case 2: {
-        
-            bin1_idx = curt_move[0];
-            bin2_idx = curt_move[2];
-            
-            bin1 = &(*(bins->begin() + bin1_idx));
-            bin2 = &(*(bins->begin() + bin2_idx));
-            
-            for (int i=0; i<bin1->packed_items.size(); i++) {
-                for (int j=0; j<bin2->packed_items.size(); j++) {
-                    item1 = bin1->packed_items[i];
-                    item2 = bin2->packed_items[j];
-                    if (bin1->cap_left + item1.size >= item2.size && item2.size + bin2->cap_left >= item1.size) {
-                        curt_move[1] = i;
-                        curt_move[3] = j;
-                        return 1;
-                    }
-                }
-            }
-            return -1;
-        }
-
-        case 3: {
-
-        }
     }
 
     return -1;
 }
 
+// Copy the current move to best move.
 void copy_move(int* curt_move, int* best_move) {
     for (int i=0; i<6; i++) {
         best_move[i] = curt_move[i];
     }
 }
 
+/* 
+ * According to the index of bins/items stored in best_move
+ * apply specified swap on those bins/items
+*/ 
 void apply_move(int nb_indx, int* best_move, struct solution_struct* best_neighb) {
 
     bin_struct* bin1;
@@ -402,73 +288,53 @@ void apply_move(int nb_indx, int* best_move, struct solution_struct* best_neighb
 
     int delta = 0;
     
-    // int cap1_after, cap2_after, cap3_after;
-    
     switch(nb_indx) {
         case 1: {
-        
-            // initialization part
+            cout << "apply move" <<endl;
+            // purely add an item from one bin to another
             bin1_idx = best_move[0];
             bin2_idx = best_move[2];
-            bin3_idx = best_move[4];
 
-            item1_idx = best_move[1];
             item2_idx = best_move[3];
-            item3_idx = best_move[5];
-    
-            if (item1_idx == -1 || item2_idx == -1 || item3_idx == -1) {
-                cout << "invalid move" <<endl;
-                break;
-            }
+            
             bin1 = &(*(bins->begin() + bin1_idx));
             bin2 = &(*(bins->begin() + bin2_idx));
-            bin3 = &(*(bins->begin() + bin3_idx));
-
-
-            item1 = bin1->packed_items[item1_idx];
+            
             item2 = bin2->packed_items[item2_idx];
-            item3 = bin3->packed_items[item3_idx];
 
-
-            // swap part
-            bin1->cap_left = bin1->cap_left - item2.size - item3.size + item1.size;
-            bin2->cap_left = bin2->cap_left - item1.size + item2.size;
-            bin3->cap_left = bin3->cap_left + item3.size;
-
-            // all satisfied, then swap
-            bin1->packed_items.erase(bin1->packed_items.begin() + item1_idx);
+            bin1->cap_left = bin1->cap_left - item2.size;
+            bin2->cap_left = bin2->cap_left + item2.size;
+       
             bin2->packed_items.erase(bin2->packed_items.begin() + item2_idx);
-            bin3->packed_items.erase(bin3->packed_items.begin() + item3_idx);
 
             bin1->packed_items.push_back(item2); // add item2 to bin1
-            bin1->packed_items.push_back(item3); // add item3 to bin1
-            bin2->packed_items.push_back(item1); // add item1 to bin2
-
-            if (bin3->packed_items.size() == 0) {
+            
+            if (bin2->packed_items.size() == 0) {
                 cout << "objective -1 " << endl;
-                best_neighb->bins.erase(best_neighb->bins.begin() + bin3_idx);
+                best_neighb->bins.erase(best_neighb->bins.begin() + bin2_idx);
                 best_neighb->objective -= 1;
             }
             break;
-        }
 
-        case 2: {
+        }
         
+        case 2: {
+            // transfer two items in two bins
             bin1_idx = best_move[0];
             bin2_idx = best_move[2];
 
             item1_idx = best_move[1];
             item2_idx = best_move[3];
-            
+
             bin1 = &(*(bins->begin() + bin1_idx));
             bin2 = &(*(bins->begin() + bin2_idx));
             
             item1 = bin1->packed_items[item1_idx];
-            item2 = bin1->packed_items[item2_idx];
-            
+            item2 = bin2->packed_items[item2_idx];
+
             bin1->cap_left = bin1->cap_left - item2.size + item1.size;
             bin2->cap_left = bin2->cap_left - item1.size + item2.size;
-            
+       
             bin1->packed_items.erase(bin1->packed_items.begin() + item1_idx);
             bin2->packed_items.erase(bin2->packed_items.begin() + item2_idx);
 
@@ -477,212 +343,590 @@ void apply_move(int nb_indx, int* best_move, struct solution_struct* best_neighb
 
             break;
         }
-
-        case 3: {
-
-        }
-
     }
-
 }
 
-//nb_indx <=3
+
 struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* curt_sln)
 {
     struct solution_struct* best_neighb = curt_sln;
-    
-    int n=curt_sln->prob->n;
 
     vector<bin_struct> * bins = & curt_sln->bins;
 
-    //storing best neighbourhood moves
-    int curt_move[] ={-1,-1, -1,-1, -1,-1}, best_move []={-1,-1, -1,-1, -1,-1};
+    int n=curt_sln->prob->n;
+
+    /* 
+     * curt_move and best_move are arrays to store neighbourhood moves
+     * to better understand this, you could view curt_move as:
+     * [bin1_index, item1_index,  bin2_index, item2_index,  bin3_index, item3_index...]
+    */ 
+    int curt_move[] ={-1,-1, -1,-1, -1,-1, -1,-1, -1, -1}, best_move []={-1,-1, -1,-1, -1,-1, -1,-1,  -1,-1};
     int delta=0, best_delta=0;  
     
     bin_struct* bin1;
     bin_struct* bin2;
     bin_struct* bin3;
+    bin_struct* bin4;
 
+    item_struct item1, item2, item3, item4, item5;
+    
+    int binIndex1, binIndex2, binIndex3, itemIndex1, itemIndex2, itemIndex3, itemIndex4, itemIndex5;
     switch (nb_indx)
     {
-        case 3: {
-            for (int i=0; i<bins->size(); i++) {
+        /*
+         * The main idea of case 1 is to move an item from one bin to another bin.
+         * Case 1 try to find one items and two bins, which satisfy condition that the 
+         * item1 from bin1 could be directly put into bin2. The fitness value is 
+         * item1's size, which is also the changed capacity on bin2
+        */
+        case 2: {
+            // travel through all the bins
+            for (int i=0; i<bins->size(); i++ ) { 
+                // use a pointer to point to the current bin
                 bin1 = &(*(bins->begin() + i));
+                // if current bin is full
                 if (bin1->cap_left == 0) continue;
-                for (int j=i+1; j<bins->size(); j++) {
+
+                // travel through all the bins, start from bin1 + 1
+                for (int j=i+1; j<bins->size(); j++ ) { 
                     bin2 = &(*(bins->begin() + j));
                     if (bin2->cap_left == 0) continue;
-                    
+
+                    // record the two bins selected
                     curt_move[0] = i;
                     curt_move[2] = j;
 
-                    delta = can_move(bins, &curt_move[0], nb_indx);
-                    if (delta)
+                    // calculate the possible delta in these two bins
+                    delta = can_move(bins, &curt_move[0], 1);
 
-                    two_one_swap(bin1, bin2, curt_sln);
-                }
-            }
-        }
+                    if (delta == -2) {
+                        // this case means after swap the bin1's capacity left could be exactly 0
+                        // so it would be executed immediately
+                        isImproving = true;
+                        apply_move(1, &curt_move[0], best_neighb);
+                        return best_neighb;
+                    }
 
-        case 2: {
-            // search from back to front, bin1 is the bin with higher index
-            for (int i=bins->size()-1; i>0; i-- ) { 
-                bin1 = &(*(bins->begin() + i));
-                for (int j=i-1; j>0; j-- ) { 
-                    bin2 = &(*(bins->begin() + j));
-                    one_swap(bin1, bin2, i, curt_sln);
-                }
-            }
-        }
-            
-        case 1: {
-            // 1 - 1 - 1 swap
-            // select three bins that are not full, and try all kinds of swap between bins
-            for (int i=0; i<bins->size(); i++) {
-                bin1 = &(*(bins->begin() + i));
-                if (bin1->cap_left == 0) continue;
-                for (int j=i+1; j<bins->size(); j++) {
-                    bin2 = &(*(bins->begin() + j));
-                    if (bin2->cap_left == 0) continue;
-                    for (int k=j+1; k<bins->size(); k++) {
-                        bin3 = &(*(bins->begin() + k));
-                        if (bin3->cap_left == 0) continue;
-
-                        curt_move[0] = i;
-                        curt_move[2] = j;
-                        curt_move[4] = k;
-
-                        delta = can_move(bins, &curt_move[0], nb_indx);
-                        if (delta ==  1000) {
-                            isImproving = true;
-
-                            apply_move(nb_indx, &curt_move[0], best_neighb);
-                            break;
-                        }
-                        if (delta >= best_delta) {
-                            isImproving = true;
-                            best_delta = delta;
-                            copy_move(&curt_move[0], &best_move[0]);
-                        }
-                        
+                    if (delta > best_delta) {
+                        // if have a better solution, update best_move
+                        cout << "best delta" << endl;
+                        isImproving = true;
+                        best_delta = delta;
+                        copy_move(&curt_move[0], &best_move[0]);
                     }
                 }
             }
 
-            // // 两个算法之间做好隔离
-            // // dif = 0;
-            // bin1 = NULL;
-            // bin2 = NULL;
-            // bin3 = NULL;
-            // // 2-1 swap
-            
+            if (best_delta > 0) {
+                // apply move 
+                isImproving = true;
+                apply_move(1, &best_move[0], best_neighb);
+            }
+            break;
+        }
 
+        /*
+         * The main idea of case 2 is to swap two items in two bins.
+         * Case 2 try to find two items from two bins, which satisfy condition that the 
+         * item1 from bin1 could be replaced with item2 from bin2, in other words, swap two items. 
+         * The fitness value is item2's size minus item1's size, it is also the changed 
+         * capacity on bin1.
+        */
 
-            if(best_delta>0) { 
+        case 3: {
+            for (int i=0; i<bins->size(); i++ ) { 
+                bin1 = &(*(bins->begin() + i));
+                if (bin1->cap_left == 0) continue;
+                for (int j=i+1; j<bins->size(); j++ ) { 
+                    bin2 = &(*(bins->begin() + j));
+                    if (bin2->cap_left == 0) continue;
+
+                    curt_move[0] = i;
+                    curt_move[2] = j;
+
+                    delta = can_move(bins, &curt_move[0], nb_indx);
+
+                    if (delta == -2) {
+                        isImproving = true;
+                        apply_move(nb_indx, &curt_move[0], best_neighb);
+                        return best_neighb;
+                    }
+
+                    if (delta > best_delta) {
+                        isImproving = true;
+                        best_delta = delta;
+                        copy_move(&curt_move[0], &best_move[0]);
+                    }
+                }
+            }
+
+            if (best_delta > 0) {
                 isImproving = true;
                 apply_move(nb_indx, &best_move[0], best_neighb);
             }
+            break;
+        }
 
+        /* 
+         * NOTES:
+         * For case 3 and 4, I do to not encapsulate the algorithm through methods can_move and 
+         * apply_move. That is because I'm afraid that encapsulation may reduce the execution 
+         * efficiency, though encapsulation dose make codes more human friendly.(Later I found 
+         * these reduction on performace could be ignored) 
+        */
+
+
+        /*
+         * Case 3 is actaully a conbination of 1-2 swap and 1-1-1 swap.
+         *
+         * 1-2 swap selects two bins and swap one item from bin1 with another two items from bin2.
+         * Fitness value for 1-2 swap is item2.size + item3.size - item1's size, 
+         * i.e. the capacity change on bin1.
+         *
+         * 1-1-1 swap is a little bit more complex. It takes three bins, bin1, bin2, and bin3. 
+         * From bin1 it take out item1, from bin2 take out item2, and from bin3 take out item3. 
+         * Then put the item2 and item3 into bin1, and put the item2 into bin1. The fitness 
+         * value for 1-1-1 swap is the same with 1-2 swap, item2.size + item3.size - item1.size.
+        */
+        case 1: {
+            
+            for(int i=0; i<bins->size(); i++){
+                bin1 = &(*(bins->begin() + i));
+                if (bin1->cap_left==0) { continue; }
+
+                for (int j = i + 1; j < bins->size(); j++) {
+                    bin2 = &(*(bins->begin() + j));
+                    if (bin2->cap_left==0) { continue; }
+                
+                    // here is a trick, let k start with j
+                    // when k == j, it is actually searching for 2-1 swap
+                    // when k > j, it is searching for 1-1-1 swap
+                    for (int k = j; k < bins->size(); k++) {
+                        bin3 = &(*(bins->begin() + k));
+
+                        for (int a = 0; a < bin1->packed_items.size(); a++) {
+                            for (int b = 0; b < bin2->packed_items.size(); b++) {
+                                for (int c = 0; c < bin3->packed_items.size(); c++) {
+                                    // if bin j are the same with bin k, and b, c denotes the same item, then skip
+                                    if (j == k && b == c) { continue; }
+
+                                    // tempararily store the items, this may decrease the efficiency, but it make the code more readable
+                                    item1 = bin1->packed_items[a];
+                                    item2 = bin2->packed_items[b];
+                                    item3 = bin3->packed_items[c];
+
+                                    // make sure that these three items could swap, and its delta is greater than current best delta
+                                    if (item1.size < item2.size + item3.size && item2.size + item3.size - item1.size <= bin1->cap_left && item2.size + item3.size-item1.size > best_delta){
+                                        if (item1.size-item2.size <= bin2->cap_left
+                                        || j==k && item1.size - item2.size - item3.size <= bin2->cap_left) {
+
+                                            // store the bins/items index in best_move
+                                            best_move[0] = i;
+                                            best_move[2] = j;
+                                            best_move[4] = k;
+
+                                            best_move[1] = a;
+                                            best_move[3] = b;
+                                            best_move[5] = c;
+
+                                            // update best fitness value
+                                            best_delta = item2.size+item3.size-item1.size;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // update best neighbor to the neighbor which has the best fitness value so far
+            if (best_delta > 0) {
+                isImproving = true;
+
+                bin1 = &(*(bins->begin() + best_move[0]));
+                bin2 = &(*(bins->begin() + best_move[2]));
+                bin3 = &(*(bins->begin() + best_move[4]));
+
+                item1 = bin1->packed_items[best_move[1]];
+                item2 = bin2->packed_items[best_move[3]];
+                item3 = bin3->packed_items[best_move[5]];
+                
+                // update bins capacity
+                // if is 2-1 swap, bin2 and bin3 denotes the same bin, it works as well
+                bin1->cap_left -= item2.size + item3.size - item1.size;
+                bin2->cap_left -= item1.size - item2.size;
+                bin3->cap_left += item3.size;
+
+                bin1->packed_items.erase(bin1->packed_items.begin() + best_move[1]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[3]);
+
+                // when erasing item2 and item3 from in bin2, the order of items should be taken into consideration
+                if (best_move[2] == best_move[4] && best_move[3] < best_move[5])
+                {
+                    bin3->packed_items.erase(bin3->packed_items.begin()+best_move[5]-1);
+                } else {
+                    bin3->packed_items.erase(bin3->packed_items.begin()+best_move[5]);
+                }
+
+                // put the items into bins
+                bin1->packed_items.push_back(item2);
+                bin1->packed_items.push_back(item3);
+                bin2->packed_items.push_back(item1);
+                
+                // if after swap bin3 contains no item, delete the bin
+                if (bin3->packed_items.size() == 0)
+                {
+                    best_neighb->bins.erase(best_neighb->bins.begin() + best_move[4]);
+                    best_neighb->objective--;
+                }
+            }
+            break;
+        }
+
+        /*
+         * The main idea of case 4 is 2-2 swap.
+         * Pick two bins, and take out two items from each bin.
+         * Check if two items from bin1 could swap with two items from bin2.
+         * The fitness value is item3.size + item4.size - item1.size - item2.size, 
+         * i.e. the capacity change on bin1.
+        */
+            
+        case 4: {
+            // pick two bins with free space
+            for (int i = 0; i < bins->size(); i++) {
+                bin1 = &(*(bins->begin() + i));
+                if (bin1->cap_left==0 || bin1->packed_items.size() < 2) { continue; }
+                for (int j = i+1; j < bins->size(); j++) {
+                    bin2 = &(*(bins->begin() + j));
+                    if (bin2->packed_items.size() < 2) { continue; }
+
+                    // pick two items from each bin
+                    for (int a = 0; a < bin1->packed_items.size(); a++) {
+                        for (int b = a+1; b < bin1->packed_items.size(); b++) {
+                            for (int c = 0; c < bin2->packed_items.size(); c++) {
+                                for (int d = c+1; d < bin2->packed_items.size(); d++) {
+
+                                    delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
+
+                                    if (delta > best_delta && delta <= bin1->cap_left) {
+                                        
+                                        // store the bins/items index in best_move
+                                        best_move[0] = i;
+                                        best_move[2] = j;
+
+                                        best_move[1] = a;
+                                        best_move[3] = b;
+                                        best_move[5] = c;
+                                        best_move[7] = d;
+
+                                        // update best delta
+                                        best_delta = bin2->packed_items[c].size+bin2->packed_items[d].size-bin1->packed_items[a].size-bin1->packed_items[b].size;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (best_delta > 0) {
+
+                isImproving = true;
+
+                bin1 = &(*(bins->begin() + best_move[0]));
+                bin2 = &(*(bins->begin() + best_move[2]));
+
+                item1 = bin1->packed_items[best_move[1]];
+                item2 = bin1->packed_items[best_move[3]];
+                item3 = bin2->packed_items[best_move[5]];
+                item4 = bin2->packed_items[best_move[7]];
+
+                // update bins capacity
+                bin1->cap_left-=item4.size+item3.size-item1.size-item2.size;
+                bin2->cap_left+=item4.size+item3.size-item1.size-item2.size;
+
+                // erase items
+                bin1->packed_items.erase(bin1->packed_items.begin()+best_move[3]);
+                bin1->packed_items.erase(bin1->packed_items.begin()+best_move[1]);
+                bin2->packed_items.erase(bin2->packed_items.begin()+best_move[7]);
+                bin2->packed_items.erase(bin2->packed_items.begin()+best_move[5]);
+                
+                // put items back to bins
+                bin1->packed_items.push_back(item3);
+                bin1->packed_items.push_back(item4);
+                bin2->packed_items.push_back(item1);
+                bin2->packed_items.push_back(item2);
+            }
             break;
         }
         
+             
+        /*
+         * The main idea of case 5 is 2-3 swap.
+         * It selects two bins, from bin1 it take out two item and from bin2 it take out 
+         * three items, then swap the three items with two items.
+        */
+        case 5:
+            for (int i = 0; i < bins->size(); i++) {
+                bin1 = &(*(bins->begin() + i));
+                if (bin1->cap_left == 0) { continue; }
+
+                for (int j = i+1; j < bins->size(); j++) {
+                    bin2 = &(*(bins->begin() + j));
+                    if (bin2->packed_items.size() < 3) { continue; }
+
+                    for (int a = 0; a < bin1->packed_items.size(); a++) {
+                        for (int b = 0; b < bin1->packed_items.size(); b++) {
+                            for (int c = 0; c < bin2->packed_items.size(); c++) {
+                                for (int d = c+1; d < bin2->packed_items.size(); d++) {
+                                    for (int e = d+1; e < bin2->packed_items.size(); e++) {
+
+                                        item1 = bin1->packed_items[a];
+                                        item2 = bin2->packed_items[b];
+
+                                        item3 = bin2->packed_items[c];
+                                        item4 = bin2->packed_items[d];
+                                        item5 = bin2->packed_items[e];
+
+                                        delta = item3.size + item4.size + item5.size - item1.size - item2.size;
+                                        
+                                        if (delta > best_delta && delta <= bin1->cap_left)
+                                        {
+                                            best_delta = delta;
+
+                                            best_move[0] = i;
+                                            best_move[2] = j;
+
+                                            best_move[1] = a;
+                                            best_move[3] = b;
+                                            best_move[5] = c;
+                                            best_move[7] = d;
+                                            best_move[9] = e;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (best_delta>0)
+            {
+                isImproving = true; 
+
+                bin1 = &(*(bins->begin() + best_move[0]));
+                bin2 = &(*(bins->begin() + best_move[2]));
+
+                item1 = bin1->packed_items[best_move[1]];
+                item2 = bin2->packed_items[best_move[3]];
+                item3 = bin2->packed_items[best_move[5]];
+                item4 = bin2->packed_items[best_move[7]];
+                item5 = bin2->packed_items[best_move[9]];
+
+                bin1->cap_left -= item3.size + item4.size + item5.size - item1.size - item2.size; 
+                bin2->cap_left += item3.size + item4.size + item5.size - item1.size - item2.size; 
+
+                bin1->packed_items.erase(bin1->packed_items.begin() + best_move[3]);
+                bin1->packed_items.erase(bin1->packed_items.begin() + best_move[1]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[9]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[7]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[5]);
+                
+                bin1->packed_items.push_back(item3);
+                bin1->packed_items.push_back(item4);
+                bin1->packed_items.push_back(item5);
+                bin2->packed_items.push_back(item1);
+                bin2->packed_items.push_back(item2);
+
+            }
+            break;
+            
+        /*
+         * The main idea of case 6 is 1-3 swap.
+         * It selects two bins, from bin1 it take out one item and from bin2 it take out 
+         * three items, then swap the three items with one item.
+        */
+        case 6:
+            for (int i = 0; i < bins->size(); i++) {
+                bin1 = &(*(bins->begin() + i));
+                if (bin1->cap_left == 0) { continue; }
+
+                for (int j = i+1; j < bins->size(); j++) {
+                    bin2 = &(*(bins->begin() + j));
+                    if (bin2->packed_items.size() < 3) { continue; }
+
+                    for (int a = 0; a < bin1->packed_items.size(); a++) {
+                        for (int c = 0; c < bin2->packed_items.size(); c++) {
+                            for (int d = c+1; d < bin2->packed_items.size(); d++) {
+                                for (int e = d+1; e < bin2->packed_items.size(); e++) {
+                                    item1 = bin1->packed_items[a];
+
+                                    item2 = bin2->packed_items[c];
+                                    item3 = bin2->packed_items[d];
+                                    item4 = bin2->packed_items[e];
+
+                                    delta = item2.size + item3.size + item4.size - item1.size;
+                                    
+                                    if (delta > best_delta && delta <= bin1->cap_left)
+                                    {
+                                        best_delta = delta;
+
+                                        best_move[0] = i;
+                                        best_move[2] = j;
+
+                                        best_move[1] = a;
+                                        best_move[3] = c;
+                                        best_move[5] = d;
+                                        best_move[7] = e;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (best_delta>0)
+            {
+                isImproving = true; 
+
+                bin1 = &(*(bins->begin() + best_move[0]));
+                bin2 = &(*(bins->begin() + best_move[2]));
+
+                item1 = bin1->packed_items[best_move[1]];
+                item2 = bin2->packed_items[best_move[3]];
+                item3 = bin2->packed_items[best_move[5]];
+                item4 = bin2->packed_items[best_move[7]];
+
+                bin1->cap_left -= item2.size + item3.size +item4.size - item1.size; 
+                bin2->cap_left += item2.size + item3.size +item4.size - item1.size; 
+
+                bin1->packed_items.erase(bin1->packed_items.begin() + best_move[1]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[7]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[5]);
+                bin2->packed_items.erase(bin2->packed_items.begin() + best_move[3]);
+                
+                bin1->packed_items.push_back(item2);
+                bin1->packed_items.push_back(item3);
+                bin1->packed_items.push_back(item4);
+                bin2->packed_items.push_back(item1);
+
+            }
+            break;
     }
     return best_neighb;
 }
 
-//  best descent
+
+ /* 
+  * Use best fit algorithm to get the initial solution. Every time 
+  * to pack an item, find the bins that could contain it, and select the 
+  * bin with the minimum capacity left. If not find a bin could contain 
+  * the item, then create a new bin, and pack the item
+ */
 struct solution_struct* greedy_heuristic (struct problem_struct* prob) {
-    int total_n = prob->n;
-    int n = prob->n; // unpacked items number
-    int cap = prob->capacities; // capacities of each bin
-    struct item_struct* items = prob->items; // all items of the problem
+    int n = prob->n;                            // unpacked items number
+    int cap = prob->capacities;                 // capacities of each bin
+    struct item_struct* items = prob->items;    // all items of the problem
+    int bin_num = 1;                            // number of bin currently created
 
-    struct solution_struct* sol = new solution_struct(); // initialize the solution
-    sol->prob = prob;
-    // struct solution_struct* sol = initialize_empty_sol(prob); // initialize the solution
+    // initialize the solution
+    struct solution_struct* sln = new solution_struct(); 
+    sln->prob = prob;
 
-    // initialize a bin
-    bin_struct *bin = new bin_struct();
-    bin->cap_left = cap;
+    // sort the items in descending order
+    qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc); 
 
-    bool isFound = false;
+    // initialize a bin, and push it into vector
+    bin_struct bin;
+    bin.cap_left = cap;
+    sln->bins.push_back(bin);
 
-    // qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc1); // descending
-    qsort(prob->items, prob->n, sizeof(struct item_struct), cmpfunc2); // ascending
+    // travel through all the items
+    for (int i=0; i<n; i++) {
+        int index = 0, target_index = -1; int left_cap = cap+1;
 
-    // let it run infinitely until some conditions are reached
-    while(1) {
-
-        if (n == 0) {
-            // add the last bin
-            sol->bins.push_back(*bin);
-            delete(bin);
-            sol->objective += 1;
-
-            break; // if all items packed
-        }
-        
-        item_struct* choice = NULL; // record the best descent
-
-        for (int i=0; i<total_n; i++) {
-            // if the item is small enough to be added into the bin
-            if (!items[i].isPacked && bin->cap_left >= items[i].size) {
-                isFound = true; 
-
-                if (choice == NULL) { 
-                    choice = & items[i]; 
-                }
-
-                // compete with the current known best descent                
-                if (items[i].size > choice->size) {
-                    choice = & items[i];
-                }
+        // travel through all the bins
+        while(index <bin_num) {
+            // if the item could be 
+            if (sln->bins[index].cap_left >= prob->items[i].size && left_cap > sln->bins[index].cap_left) {
+                target_index = index;
+                left_cap = sln->bins[index].cap_left;
             }
+            index ++;
         }
 
-        if (isFound) {
+        if (target_index==-1) {
+            // if the target_index is not updated, which means do not find a suitable bin
+            // then create a new bin and store the item into that bin
+            bin_struct new_bin;
+            new_bin.packed_items.push_back(prob->items[i]);
+            new_bin.cap_left = cap-prob->items[i].size;
+            sln->bins.push_back(new_bin);
+            bin_num ++;
             
-            bin->packed_items.push_back(*choice);
-            bin->cap_left -= choice->size;
-            choice->isPacked = true;
-            n--; // minus the total unpacked item number
-
-        } else { 
-            
-            // the current bin is too small to hold any item, push back the bin
-            sol->bins.push_back(*bin);
-            delete(bin);
-            sol->objective += 1;
-
-            // initialize a new empty bin
-            bin = new bin_struct();
-            bin->cap_left = cap;
+        } else {
+            // if is updated, push the item into the target bin
+            sln->bins[target_index].packed_items.push_back(prob->items[i]);
+            sln->bins[target_index].cap_left-=prob->items[i].size;
         }
-    
-        isFound = false;
     }
 
-    return sol;
+    sln->objective = bin_num;
+
+    return sln;
 }
 
 
-
+// pair-wise random swap, strength denotes how much 
 void vns_shaking(struct solution_struct* sln, int strength)
-{//using random pair-wise swap
+{
+    int bin_index1, bin_index2;
+    int item_indx1, item_indx2;
+    item_struct item1, item2;
 
-    int n = sln->objective;
-    int m =0, time=0;
-    while(m<strength && time<200)
+    int n = sln->prob->n;
+    int m = 0, time = 0;
+
+
+    while (m < strength && time < 200)
     {
-        int move[4];
-        int i = rand_int(0, n-1);
-        int j = rand_int(0, n-1);        
-        
-        move[0] = i;
-        move[2] = j;
+        // randomly pick two bins
+        bin_index1 = rand_int(0, sln->bins.size() - 1);
+        bin_index2 = rand_int(0, sln->bins.size() - 1);
 
-        if (can_move(&sln->bins, &move[0], 2) == 1) {
-            apply_move(2, &move[0], sln);
+        // if the two bins are the same, repick
+        while (bin_index1 == bin_index2 && time < 200)
+        {
+            bin_index2 = rand_int(0, sln->bins.size() - 1);
+            time++;
+        }
+
+        // randomly pick two item in the two bins
+        item_indx1 = rand_int(0, sln->bins[bin_index1].packed_items.size() - 1);
+        item_indx2 = rand_int(0, sln->bins[bin_index2].packed_items.size() - 1);
+
+        // make sure that the items could swap
+        if (sln->bins[bin_index2].packed_items[item_indx2].size - sln->bins[bin_index1].packed_items[item_indx1].size <= sln->bins[bin_index1].cap_left
+            && sln->bins[bin_index1].packed_items[item_indx1].size-sln->bins[bin_index2].packed_items[item_indx2].size <= sln->bins[bin_index2].cap_left)
+        {
+
+            // temporarily store the items
+            item1 = sln->bins[bin_index1].packed_items[item_indx1];
+            item2 = sln->bins[bin_index2].packed_items[item_indx2];
+
+            // firstly update the bins left capacity
+            sln->bins[bin_index1].cap_left -= item2.size-item1.size;
+            sln->bins[bin_index2].cap_left += item2.size-item1.size;
+            
+            // then put the items into the bins
+            sln->bins[bin_index1].packed_items.push_back(item2);
+            sln->bins[bin_index2].packed_items.push_back(item1);
+
+            // finally delete the items from the bins
+            sln->bins[bin_index1].packed_items.erase(sln->bins[bin_index1].packed_items.begin()+item_indx1);
+            sln->bins[bin_index2].packed_items.erase(sln->bins[bin_index2].packed_items.begin()+item_indx2);
+
             m++;
         }
         time++;
@@ -693,59 +937,85 @@ void varaible_neighbourhood_search(struct problem_struct* prob){
     clock_t time_start, time_fin;
     time_start = clock();
     double time_spent=0;
-    int nb_indx = 0; //neighbourhood index, start from 2, 0 or 1 is meaningless
-    
-    best_sln.prob = prob;
+    int nb_indx = 0;                // neighbourhood index
+    bool isBestSolution = false;    // this is to denote if the current solution is already best
+
+    best_sln.prob = prob;           
+
+    // get an initial solution using greedy heuristic
     struct solution_struct* curt_sln = greedy_heuristic(prob);
-    update_best_solution(curt_sln);
+    update_best_solution(curt_sln); // update best solution
 
     // Test code here
     cout << "Initialize a possible answer: " << endl;
     cout << "Objectives: " << best_sln.objective << endl;
     cout << "Known best: " << prob->known_best << endl << endl;
 
+    // return ;
 
     int shaking_count =0;
     while(time_spent < MAX_TIME) {
 
-        // while(nb_indx < K) {
+        while(nb_indx < K) {
+            isImproving = false;
+
+            // search for a better solution in current neighborhood
             struct solution_struct* neighb_s=best_descent_vns(nb_indx+1, curt_sln);
 
             if (isImproving) {
+                // if have improvement, update current solution, and restart vns
                 copy_solution(curt_sln, neighb_s);
-                cout << curt_sln->objective << endl;
                 nb_indx=0;
             }
-            isImproving = false;
-            
-            if (curt_sln->objective == curt_sln->prob->known_best) {
+            else {
+                // if have no improvement, search next neighborhood
+                // nb_indx ++;
                 break;
             }
-            // delete(neighb_s);
-        // }
-        // update_best_solution(curt_sln);
-        // double gap = 1000;
-        // gap = (best_sln.prob->known_best - best_sln.objective) / best_sln.prob->known_best;
-        // vns_shaking(curt_sln, SHAKE_STRENGTH);
-        // shaking_count ++;
-        // nb_indx = 0;
-        
-    //     break;
 
-        time_fin = clock();
+        //     // if the current objective already equal to best obejective, then stop 
+            if (curt_sln->objective == curt_sln->prob->known_best) {
+                isBestSolution = true;
+                cout << "current is the best solution" << endl;
+                break;
+            }
+        }
+
+        update_best_solution(curt_sln);         // update best solution
+        
+        if (isBestSolution) {
+            break;
+        }
+
+        /* Diversification part */
+        double gap = 1000;
+        gap = (double)(best_sln.objective - best_sln.prob->known_best)*100 / best_sln.prob->known_best;
+
+        printf("shaking_count=%d, curt obj =%d, known best obj=%d, gap= %0.1f%%\n",shaking_count, curt_sln->objective, prob->known_best, gap);
+
+        copy_solution(curt_sln, &best_sln);
+        vns_shaking(curt_sln, SHAKE_STRENGTH);  // start shaking
+        shaking_count ++;                       // shaking count + 1
+        nb_indx = 0;                            // restart vns from neighbor 1 
+
+        /* 
+         * if already shaked for 1000 times, it would probably have no improvement for 
+         * later shaking, so just stop it
+        */
+        if (shaking_count > 1000) { 
+            break;
+        }
+
+        time_fin = clock();                     // record the time spent
         time_spent = (double) (time_fin - time_start) /CLOCKS_PER_SEC;
     }
 
-
-    // output_solution(&best_sln, "vns_results.txt");
-    // free_solution(curt_sln); 
     delete(curt_sln);
-
 }
 
 
 int main(int argc, const char * argv[]) {
-    
+
     printf("Starting the run...\n");
 
     char data_file[50]={"somefile"}, out_file[50]={}, solution_file[50]={};  //max 50 problem instances per run
@@ -776,6 +1046,14 @@ int main(int argc, const char * argv[]) {
         printf("data_file= %s, output_file= %s, sln_file=%s, max_time=%d\n", data_file, out_file, solution_file, MAX_TIME);
     }
     struct problem_struct** my_problems = load_problems(data_file);
+
+    // srand(2);
+    // srand(3); //best, medium have 4
+    // srand(10); //best, medium have 4
+    // srand(20); // not bad, but would have 1 for binpack1, sometimes, binpack3 would be 3, mostly 4
+    // srand(30); // not bad, but would have 1 for binpack1, sometimes, binpack3 would be 3, mostly 4
+    srand(100); // not bad, but would have 1 for binpack1, sometimes, binpack3 would be 3, mostly 4
+    
     
     if(strlen(solution_file)<=0)
     {
@@ -787,7 +1065,7 @@ int main(int argc, const char * argv[]) {
         for(int k=0; k<num_of_problems; k++)
         {
             cout << "Number of question: " << k << endl;
-            best_sln.objective=1000; best_sln.feasibility=0;
+            best_sln.objective=1000; 
             for(int run=0; run<NUM_OF_RUNS; run++) {
                 printf("Running VNS...\n");
                 varaible_neighbourhood_search(my_problems[k]);
@@ -798,17 +1076,10 @@ int main(int argc, const char * argv[]) {
 
     for(int k=0; k<num_of_problems; k++)
     {
-        // printf("free problem %d\n", k);
         free_problem(my_problems[k]); //free problem data memory
     }
 
     free(my_problems); //free problems array
     
-    // if (best_sln.x!=NULL && best_sln.cap_left != NULL) {
-    //     free(best_sln.cap_left); 
-    //     free(best_sln.x);
-    // } 
-    
-    //free global
     return 0;
 }
