@@ -424,7 +424,6 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             // }
             // break;
 
-
             // // add item
             for (int i=0; i<bins->size(); i++ ) { 
                 bin1 = &(*(bins->begin() + i));

@@ -465,6 +465,7 @@ struct solution_struct* best_descent_vns(int nb_indx, struct solution_struct* cu
             break;
         }
 
+
         /* 
          * NOTES:
          * For case 3 and 4, I do to not encapsulate the algorithm through methods can_move and 
