@@ -238,6 +238,7 @@ Below are the results of five runs with random seeds 3, 10, 20, 30, and 100. In 
 | u500_03 | 204       | 204       | 0    | HARD8   | 57        | 57        | 0    |
 | u500_04 | 206       | 206       | 0    | HARD9   | 56        | 56        | 0    |
 
+
 ##### Worst result
 
 | DataSet | Objective | Best know | Gap  | DataSet | Objective | Best know | Gap  |
