@@ -4,7 +4,24 @@
 
 In this report, the following topics will be covered:
 
-[toc]
+- [Contents](#contents)
+- [Algorithm explanation](#algorithm-explanation)
+    - [Solution encoding](#solution-encoding)
+    - [Fitness function](#fitness-function)
+    - [Initial solution gathering](#initial-solution-gathering)
+    - [Neighborhood choosing (intensification part)](#neighborhood-choosing-intensification-part)
+      - [1-1-1 swap (neighborhood 3)](#1-1-1-swap-neighborhood-3)
+      - [1-2 swap (neighborhood 3)](#1-2-swap-neighborhood-3)
+      - [Shaking (diversification part)](#shaking-diversification-part)
+      - [One item transfer (neighborhood 1)](#one-item-transfer-neighborhood-1)
+      - [1-1 swap (neighborhood 2)](#1-1-swap-neighborhood-2)
+      - [2-2 swap (neighborhood 4) \& 1-3 swap \& 2-3 swap](#2-2-swap-neighborhood-4--1-3-swap--2-3-swap)
+- [Performance evaluation](#performance-evaluation)
+      - [Best result](#best-result)
+      - [Worst result](#worst-result)
+      - [Average result](#average-result)
+- [Reflections](#reflections)
+
 
 ​																																									Words count: 1989
 
@@ -237,6 +254,7 @@ Below are the results of five runs with random seeds 3, 10, 20, 30, and 100. In 
 | u500_02 | 202       | 202       | 0    | HARD7   | 55        | 55        | 0    |
 | u500_03 | 204       | 204       | 0    | HARD8   | 57        | 57        | 0    |
 | u500_04 | 206       | 206       | 0    | HARD9   | 56        | 56        | 0    |
+
 
 ##### Worst result
 
